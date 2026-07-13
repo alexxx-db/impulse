@@ -29,6 +29,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
 )
 from impulse_query_engine.measurement_db import MeasurementDB
 from tests.conftest import basic_narrow_db, key_value_store_db, spark
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 
 def _default_cfg(project_id: str = "SAMPLE_PROJECT", **table_overrides) -> SolverConfig:
@@ -56,7 +57,7 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """When no TagExpression filter is applied, all entity_ids are returned."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         container_ids = {row.container_id for row in result.collect()}
@@ -64,7 +65,7 @@ class TestDefaultSolverFilterContainerTags:
 
     def test_with_single_tag_filter(self, spark: SparkSession, key_value_store_db: MeasurementDB):
         """A single TagExpression filter should return matching containers."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("brand") == "Seat")
         result = solver.filter_container_tags(spark, query)
@@ -75,7 +76,7 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A filter that matches no rows should return an empty result."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("brand") == "NonExistentBrand")
         result = solver.filter_container_tags(spark, query)
@@ -85,7 +86,7 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """AND-combined TagExpression filters should narrow results correctly."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         brand_filter = TagSelector("brand") == "Seat"
         model_filter = TagSelector("model") == "Leon"
@@ -98,7 +99,7 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """OR-combined filters should return the union of matching containers."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         brand_seat = TagSelector("brand") == "Seat"
         brand_vw = TagSelector("brand") == "VW"
@@ -111,22 +112,19 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-existent project_id should yield zero rows."""
-        solver = DefaultSolver(spark, config=_default_cfg("NON_EXISTENT_PROJECT"))
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT")))
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
 
     def test_with_matching_parent_id(self, spark: SparkSession, key_value_store_db: MeasurementDB):
         """When parent_id matches, all matching containers are returned."""
-        solver = DefaultSolver(
-            spark,
-            config=_default_cfg(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
                 container_tags=TableConfig(
                     column_name_mapping={"element_id": "key"},
                     filters={"parent_id": "container_concept"},
                 ),
-            ),
-        )
+            )))
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         container_ids = {row.container_id for row in result.collect()}
@@ -136,15 +134,12 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """When parent_id does not match any rows, zero results are returned."""
-        solver = DefaultSolver(
-            spark,
-            config=_default_cfg(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
                 container_tags=TableConfig(
                     column_name_mapping={"element_id": "key"},
                     filters={"parent_id": "non_existent_parent"},
                 ),
-            ),
-        )
+            )))
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
@@ -154,7 +149,7 @@ class TestDefaultSolverFilterContainerTags:
     ):
         """When no parent_id filter is configured, all containers are returned."""
         cfg = _default_cfg()
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert "parent_id" not in cfg.container_tags.filters
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
@@ -189,7 +184,7 @@ class TestDefaultSolverFilterContainerMetrics:
 
     def test_join_with_filtered_tags(self, spark: SparkSession, key_value_store_db: MeasurementDB):
         """filter_container_metrics should inner-join tags with container_metrics."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("model") == "Leon")
         tags_df = solver.filter_container_tags(spark, query)
@@ -201,7 +196,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Without metric filters, all container_ids from the project should be returned."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -212,7 +207,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A MetricExpression filter on a container_metrics column should restrict results."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(MetricSelector("brand") == "Seat")
         tags_df = solver.filter_container_tags(spark, query)
@@ -224,7 +219,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A MetricExpression that matches no container_metrics rows yields zero."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(MetricSelector("brand") == "VW")
         tags_df = solver.filter_container_tags(spark, query)
@@ -235,15 +230,12 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """``config.container_metrics.filters`` should be applied to container_metrics."""
-        solver = DefaultSolver(
-            spark,
-            config=_default_cfg(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
                 container_metrics=TableConfig(
                     column_name_mapping={"project": "project_id"},
                     filters={"brand": "Seat"},
                 ),
-            ),
-        )
+            )))
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -254,15 +246,12 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-matching ``container_metrics.filters`` value yields zero rows."""
-        solver = DefaultSolver(
-            spark,
-            config=_default_cfg(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
                 container_metrics=TableConfig(
                     column_name_mapping={"project": "project_id"},
                     filters={"brand": "VW"},
                 ),
-            ),
-        )
+            )))
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -272,7 +261,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-existent project_id should yield zero container_metrics rows."""
-        solver = DefaultSolver(spark, config=_default_cfg("NON_EXISTENT_PROJECT"))
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT")))
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -282,7 +271,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """``pre_filtered_containers_df`` should replace the table read."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         full = query.db.container_metrics(spark)
         pre = full.where(F.col("container_id") == 1)
@@ -297,7 +286,7 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Result must keep all container_metrics columns (e.g. start_ts/stop_ts)."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -323,7 +312,7 @@ class TestDefaultSolverWithoutContainerTags:
         self, spark: SparkSession, basic_narrow_db: MeasurementDB
     ):
         """Stage 1 is a no-op when no container_tags_table is configured."""
-        solver = DefaultSolver(spark, config=self._wide_only_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._wide_only_cfg()))
         query = basic_narrow_db.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
@@ -332,7 +321,7 @@ class TestDefaultSolverWithoutContainerTags:
         self, spark: SparkSession, basic_narrow_db: MeasurementDB
     ):
         """Stage 2 should return all container_metrics rows without joining."""
-        solver = DefaultSolver(spark, config=self._wide_only_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._wide_only_cfg()))
         query = basic_narrow_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -344,7 +333,7 @@ class TestDefaultSolverWithoutContainerTags:
         self, spark: SparkSession, basic_narrow_db: MeasurementDB
     ):
         """MetricExpression filters work without a container_tags_table."""
-        solver = DefaultSolver(spark, config=self._wide_only_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._wide_only_cfg()))
         query = basic_narrow_db.query
         query.where(MetricSelector("container_id") == 1)
         tags_df = solver.filter_container_tags(spark, query)
@@ -357,7 +346,7 @@ class TestDefaultSolverWithoutContainerTags:
     ):
         """When no container_tags_table is configured, stage 2 short-circuits
         before touching ``container_df`` and accepts ``None``."""
-        solver = DefaultSolver(spark, config=self._wide_only_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._wide_only_cfg()))
         query = basic_narrow_db.query
         result = solver.filter_container_metrics(spark, query, None)
         assert "container_id" in result.columns
@@ -373,7 +362,7 @@ class TestDefaultSolverWithoutContainerTags:
         The reporting layer guards against this misconfiguration at config time
         (see ``Report.create_query_builder``); the solver itself is permissive.
         """
-        solver = DefaultSolver(spark, config=self._wide_only_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._wide_only_cfg()))
         query = basic_narrow_db.query
         query.where(TagSelector("brand") == "Seat")
         tags_df = solver.filter_container_tags(spark, query)
@@ -389,7 +378,7 @@ class TestDefaultSolverEmptySelector:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Using an empty-string TagSelector should not crash; it returns no matches."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         empty_filter = TagSelector("") == "some_value"
         query.where(empty_filter)
@@ -398,7 +387,7 @@ class TestDefaultSolverEmptySelector:
 
     def test_empty_value_selector(self, spark: SparkSession, key_value_store_db: MeasurementDB):
         """Filtering for an empty string value should not crash."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("brand") == "")
         result = solver.filter_container_tags(spark, query)
@@ -445,7 +434,7 @@ class TestDefaultSolverMetricExpressions:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """End-to-end: tag filter applied via DefaultSolver should filter correctly."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("vehicle_key") == "Seat_Leon")
         result = solver.filter_container_tags(spark, query)
@@ -456,7 +445,7 @@ class TestDefaultSolverMetricExpressions:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Multiple where() calls should accumulate filters."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         query = key_value_store_db.query
         query.where(TagSelector("brand") == "Seat")
         query.where(TagSelector("model") == "Leon")
@@ -506,7 +495,7 @@ class TestDefaultSolverConfig:
 
     def test_default_config_used_when_none(self, spark: SparkSession):
         """A SolverConfig with only project_id and tag-key rename should construct cleanly."""
-        solver = DefaultSolver(spark, config=_default_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg()))
         assert solver.config.container_id_col == "container_id"
         assert solver.config.project_id_col == "project_id"
         # Verify no redundant instance attributes (PR rework item #2)
@@ -531,7 +520,7 @@ class TestDefaultSolverConfig:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         container_ids = {row.container_id for row in result.collect()}

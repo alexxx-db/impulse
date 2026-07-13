@@ -23,7 +23,7 @@ from impulse_reporting.config.config_parser import (
     ContainerFilters,
     ImpulseConfig,
     MetricFilter,
-    QueryEngine,
+    QueryEngineConfig,
     Solvers,
     Source,
     UnitySink,
@@ -67,7 +67,7 @@ def test_persist_report_string_container_id(spark, setup_string_cid_db):
                     ]
                 ]
             ),
-            query_engine=QueryEngine(solver=Solvers.KEY_VALUE_STORE_SOLVER),
+            query_engine=QueryEngineConfig(solver=Solvers.KEY_VALUE_STORE_SOLVER),
             # Include container_id so it lands in the measurement-dimension table too.
             measurement_dimensions=["container_id", "uut_id", "file_name", "file_path"],
         )

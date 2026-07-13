@@ -17,7 +17,6 @@ from impulse_reporting.aggregations.aggregation_types import AggregationType
 from impulse_reporting.config.config_parser import (
     ImpulseConfig,
     Solvers,
-    DataType,
 )
 from impulse_reporting.core.page import Page
 from impulse_reporting.core.report_utils import (
@@ -317,13 +316,7 @@ class Report:
         # resolve to the unified DefaultSolver.
         match config.query_engine.solver:
             case Solvers.DEFAULT_SOLVER | Solvers.DELTA_SOLVER | Solvers.KEY_VALUE_STORE_SOLVER:
-                return DefaultSolver(
-                    spark,
-                    config=config.query_engine.solver_config,
-                    is_raw_data=config.query_engine.data_type is DataType.RAW,
-                    drop_implausible_data=config.query_engine.drop_implausible_data,
-                    raw_encoder=config.query_engine.raw_encoder,
-                )
+                return DefaultSolver(spark, query_engine=config.query_engine)
             case _:
                 raise ValueError(
                     f"Unknown query engine solver: {config.query_engine.solver}. "

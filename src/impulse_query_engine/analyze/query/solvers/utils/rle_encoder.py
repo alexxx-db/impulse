@@ -71,35 +71,22 @@ class RleEncoder:
         over -- it simply is not emitted as its own interval.
         """
         return (
-            df.transform(self._assign_interval_ids)
+            df.transform(self._check_required_column_exists)
+            .transform(self._assign_interval_ids)
             .transform(self._remove_implausible_data_points)
             .transform(self._aggregate_intervals)
         )
 
-    def _remove_implausible_data_points(self, df: DataFrame) -> DataFrame:
-        """Optionally drop rows flagged as implausible after interval assignment.
+    def _check_required_column_exists(self, df: DataFrame) -> DataFrame:
+        """Check that the required column for dropping implausible data points exists."""
 
-        When ``drop_implausible_data_points`` is ``True``, filters out rows whose
-        ``is_plausible`` column is not ``True`` (dropping ``False`` and ``NULL``).
-        Because this runs *after* :meth:`_assign_interval_ids`, the implausible sample
-        has already served as an interval boundary: dropping it splits the surrounding
-        interval in two rather than merging across it, and no interval is emitted for
-        the implausible value itself.  When ``False``, the DataFrame is returned
-        unchanged.
-
-        Raises
-        ------
-        ValueError
-            If filtering is enabled but the ``is_plausible`` column is absent.
-        """
-        if not self.drop_implausible_data_points:
-            return df
-        if self.config.is_plausible_col not in df.columns:
+        if self.drop_implausible_data_points and self.config.is_plausible_col not in df.columns:
             raise ValueError(
                 f"DataFrame must contain an '{self.config.is_plausible_col}' column "
                 "to drop implausible data points."
             )
-        return df.filter(F.col(self.config.is_plausible_col))
+        else:
+            return df
 
     def _assign_interval_ids(self, df: DataFrame) -> DataFrame:
         """Tag each row with the id of the interval it belongs to.
@@ -130,7 +117,7 @@ class RleEncoder:
 
         if self.drop_implausible_data_points:
             value_diff_condition = (F.col(self.config.value_col) == F.col("prev_value")) & (
-                F.col("is_plausible")
+                F.col(self.config.is_plausible_col)
             )
         else:
             value_diff_condition = F.col(self.config.value_col) == F.col("prev_value")
@@ -143,6 +130,27 @@ class RleEncoder:
             .withColumn("value_diff", value_diff)
             .withColumn("value_id", value_id)
         )
+
+    def _remove_implausible_data_points(self, df: DataFrame) -> DataFrame:
+        """Optionally drop rows flagged as implausible after interval assignment.
+
+        When ``drop_implausible_data_points`` is ``True``, filters out rows whose
+        ``is_plausible`` column is not ``True`` (dropping ``False`` and ``NULL``).
+        Because this runs *after* :meth:`_assign_interval_ids`, the implausible sample
+        has already served as an interval boundary: dropping it splits the surrounding
+        interval in two rather than merging across it, and no interval is emitted for
+        the implausible value itself.  When ``False``, the DataFrame is returned
+        unchanged.
+
+        Raises
+        ------
+        ValueError
+            If filtering is enabled but the ``is_plausible`` column is absent.
+        """
+        if not self.drop_implausible_data_points:
+            return df
+        return df.filter(F.col(self.config.is_plausible_col))
+
 
     def _aggregate_intervals(self, df: DataFrame) -> DataFrame:
         """Collapse each interval's rows into a single ``(tstart, tend, value)`` row.

@@ -20,6 +20,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
     TableConfig,
 )
 from impulse_query_engine.measurement_db import MeasurementDB
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 
 def _filtered_containers(spark, db: MeasurementDB, solver: DefaultSolver, query):
@@ -31,14 +32,11 @@ class TestFilterAliasedChannelMetrics:
     def test_no_aliased_selections_returns_empty(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         query.select(query.channel(channel_name="Engine RPM", data_key="TM"))
 
@@ -52,14 +50,11 @@ class TestFilterAliasedChannelMetrics:
     def test_alias_resolves_to_correct_channels(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed")
         query.select(engine_speed)
@@ -80,14 +75,11 @@ class TestFilterAliasedChannelMetrics:
     def test_alias_scoped_by_project_id(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="NON_EXISTENT_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         query.select(query.channel_with_alias(channel_alias="engine_speed"))
 
@@ -100,16 +92,13 @@ class TestFilterAliasedChannelMetrics:
     def test_alias_scoped_by_toolbox_id(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(
                     filters={"toolbox_id": "non_existent_toolbox"}
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         query.select(query.channel_with_alias(channel_alias="engine_speed"))
 
@@ -122,14 +111,11 @@ class TestFilterAliasedChannelMetrics:
     def test_selector_id_consistent_for_same_expression(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed")
         query.select(engine_speed)
@@ -145,14 +131,11 @@ class TestFilterAliasedChannelMetrics:
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
         """Default join keys → output carries channel_name, data_key, channel_alias, priority."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         query.select(query.channel_with_alias(channel_alias="engine_speed"))
 
@@ -180,9 +163,7 @@ class TestFilterAliasedChannelMetrics:
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
         """Single-column join_keys override → only that metrics column surfaces."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(
@@ -191,8 +172,7 @@ class TestFilterAliasedChannelMetrics:
                         JoinKey(mapping_col="source_channel", metrics_col="channel_name"),
                     ],
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         query.select(query.channel_with_alias(channel_alias="engine_speed"))
 
@@ -210,14 +190,11 @@ class TestFilterAliasedChannelMetrics:
         ]
 
     def test_multiple_aliases(self, spark: SparkSession, key_value_store_alias_db: MeasurementDB):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed")
         vehicle_speed = query.channel_with_alias(channel_alias="vehicle_speed")
@@ -235,14 +212,11 @@ class TestChannelAliasEndToEnd:
     def test_solve_with_alias_only(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed").alias("engine_speed")
 
@@ -255,14 +229,11 @@ class TestChannelAliasEndToEnd:
     def test_solve_with_mixed_direct_and_alias(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         ambient_air_temp = query.channel(
             channel_name="Ambient Air Temperature", data_key="TM"
@@ -279,14 +250,11 @@ class TestChannelAliasEndToEnd:
     def test_solve_deduplication(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         direct_engine_speed = query.channel(channel_name="Engine RPM", data_key="TM").alias(
             "direct_engine_speed"
@@ -311,14 +279,11 @@ class TestChannelAliasEndToEnd:
     def test_alias_returns_same_channel_data_as_direct_engine_rpm(
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         direct_engine_speed = query.channel(channel_name="Engine RPM", data_key="TM").alias(
             "direct_engine_speed"
@@ -391,9 +356,7 @@ class TestConfigurableJoinKeys:
         # is intentionally dropped from the join.  The alias resolution still
         # works and the (container_id, channel_alias) dedup keeps results
         # unique.
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_mapping=ChannelMappingConfig(
@@ -402,8 +365,7 @@ class TestConfigurableJoinKeys:
                         JoinKey(mapping_col="source_channel", metrics_col="channel_name"),
                     ],
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed").alias("engine_speed")
 
@@ -419,9 +381,7 @@ class TestConfigurableJoinKeys:
         # Path 1: rename both physical `data_key` columns to a common
         # internal name (here we use a non-default name `dk`).  Two
         # JoinKey entries cover the composite key.
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_metrics=TableConfig(column_name_mapping={"data_key": "dk"}),
@@ -433,8 +393,7 @@ class TestConfigurableJoinKeys:
                         JoinKey(mapping_col="dk", metrics_col="dk"),
                     ],
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed").alias("engine_speed")
 
@@ -450,9 +409,7 @@ class TestConfigurableJoinKeys:
         # internal names per table and reference them directly in
         # join_keys.  No common-name rename — the JoinKey's two sides are
         # independent.
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_metrics=TableConfig(column_name_mapping={"data_key": "metrics_dk"}),
@@ -464,8 +421,7 @@ class TestConfigurableJoinKeys:
                         JoinKey(mapping_col="map_dk", metrics_col="metrics_dk"),
                     ],
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed").alias("engine_speed")
 
@@ -480,9 +436,7 @@ class TestConfigurableJoinKeys:
         # When channel_metrics.channel_name is renamed via column_name_mapping
         # to a non-default internal name, the direct selector's kwarg must use
         # the renamed name AND the override `join_keys` must reference it.
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
                 channel_metrics=TableConfig(column_name_mapping={"channel_name": "chan"}),
@@ -493,8 +447,7 @@ class TestConfigurableJoinKeys:
                         JoinKey(mapping_col="data_key", metrics_col="data_key"),
                     ],
                 ),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         # Direct selector — kwarg `chan` must match the renamed column name.
         engine_rpm = query.channel(chan="Engine RPM", data_key="TM").alias("engine_rpm")

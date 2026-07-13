@@ -37,16 +37,12 @@ column names exposed by :class:`SolverConfig`.
 **Arguments**:
 
 - `spark` (`SparkSession`): Spark session used for query execution.
-- `config` (`SolverConfig or None`): Optional configuration.  When *None* (default) no filtering by
-project or toolbox is applied.
-- `is_raw_data` (`bool`): Whether the input data is raw point data (timestamp column)
-rather than RLE format (tstart/tend columns).
-- `drop_implausible_data` (`bool`): Whether to drop data points marked as implausible before
-processing.  Requires an ``is_plausible`` column in the
-silver layer.
-- `raw_encoder` (`RawEncoder`): Which encoder converts RAW point data into intervals for solving.
-``RawEncoder.RLE`` (default) run-length encodes equal-valued runs;
-``RawEncoder.INTERVAL`` only derives ``tend``.  Only consulted when ``is_raw_data`` is ``True``.
+- `query_engine` (`QueryEngineConfig or None`): The query-engine configuration.  Carries the input ``data_type``
+(RLE intervals vs. RAW point samples), the ``raw_encoder`` used to
+convert RAW data into intervals, ``drop_implausible_data``, and the
+per-table column mappings / filters in ``solver_config``.  When
+*None* (default), a default :class:`QueryEngineConfig` is used: RLE input,
+no implausible-data filtering, and no project/toolbox scoping.
 
 #### filter\_container\_tags
 

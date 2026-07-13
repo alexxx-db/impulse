@@ -10,7 +10,7 @@ from impulse_reporting.config.config_parser import (
     ContainerFilters,
     ImpulseConfig,
     MetricFilter,
-    QueryEngine,
+    QueryEngineConfig,
     Solvers,
     Source,
     UnitySink,
@@ -57,7 +57,7 @@ def test_container_event_in_report(spark, basic_narrow_db):
                 ]
             ]
         ),
-        query_engine=QueryEngine(solver=Solvers.KEY_VALUE_STORE_SOLVER),
+        query_engine=QueryEngineConfig(solver=Solvers.KEY_VALUE_STORE_SOLVER),
         measurement_dimensions=["container_id", "start_ts", "stop_ts"],
     )
 
@@ -164,7 +164,7 @@ def test_container_event_with_basic_event(spark, basic_narrow_db):
                 ]
             ]
         ),
-        query_engine=QueryEngine(solver=Solvers.KEY_VALUE_STORE_SOLVER),
+        query_engine=QueryEngineConfig(solver=Solvers.KEY_VALUE_STORE_SOLVER),
         measurement_dimensions=["container_id", "start_ts", "stop_ts"],
     )
 
@@ -245,7 +245,7 @@ def test_sequence_of_events_without_max_overlap_in_report(spark, basic_narrow_db
                 ]
             ]
         ),
-        query_engine=QueryEngine(solver=Solvers.KEY_VALUE_STORE_SOLVER),
+        query_engine=QueryEngineConfig(solver=Solvers.KEY_VALUE_STORE_SOLVER),
         measurement_dimensions=["container_id", "start_ts", "stop_ts"],
     )
 

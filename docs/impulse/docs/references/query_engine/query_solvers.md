@@ -111,5 +111,7 @@ Auto-generated symbol-level docs:
 - [`DefaultSolver`](../api/impulse_query_engine/analyze/query/solvers/default_solver.md)
 - [`QuerySolver`](../api/impulse_query_engine/analyze/query/solvers/query_solver.md)
   — abstract base class defining the six-stage solver pipeline.
-- [`SolverConfig`](../api/impulse_query_engine/analyze/query/solvers/solver_config.md)
-  — per-table column mappings, filters, and project scoping.
+- [`QueryEngineConfig` / `SolverConfig`](../api/impulse_query_engine/analyze/query/solvers/solver_config.md)
+  — the engine configuration (`data_type`, `raw_encoder`,
+  `drop_implausible_data`, batching) and the per-table column mappings,
+  filters, and project scoping it embeds.

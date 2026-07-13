@@ -29,6 +29,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
     TableConfig,
 )
 from tests.conftest import spark  # noqa: F401  (shared session-scoped fixture)
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 
 def _alias_config() -> SolverConfig:
@@ -87,7 +88,7 @@ def test_alias_resolves_against_full_container_set(
 ):
     """Stage-level guard: the aliased resolution covers all containers regardless of
     how narrowly the direct EAV selector matched."""
-    solver = DefaultSolver(spark, config=_alias_config())
+    solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_alias_config()))
     query = key_value_store_alias_with_channel_tags_db.query
     query.select(
         query.channel(channel_name="Engine RPM"),
@@ -116,7 +117,7 @@ def test_eav_direct_and_alias_coexist(spark, key_value_store_alias_with_channel_
     """End-to-end through QueryBuilder.solve: the direct EAV selector and the alias
     coexist; the alias resolves in every container, including container 3, which the
     direct EAV selector never matched."""
-    solver = DefaultSolver(spark, config=_alias_config())
+    solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_alias_config()))
     query = key_value_store_alias_with_channel_tags_db.query
 
     direct = query.channel(channel_name="Engine RPM").mean().alias("rpm_mean")

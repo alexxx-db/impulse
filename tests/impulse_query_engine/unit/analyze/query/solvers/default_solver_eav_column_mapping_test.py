@@ -35,6 +35,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
 )
 from impulse_query_engine.measurement_db import MeasurementDB, MeasurementDBConfig
 from tests.conftest import spark
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -219,7 +220,7 @@ class TestDefaultSolverContainerTagsMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_tags.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -235,7 +236,7 @@ class TestDefaultSolverContainerTagsMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_tags.query
         query.where(TagSelector("model") == "Ateca")
         result = solver.filter_container_tags(spark, query)
@@ -269,7 +270,7 @@ class TestDefaultSolverContainerMetricsMapping:
         cfg = SolverConfig(
             container_metrics=TableConfig(column_name_mapping={"run_id": "container_id"}),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_metrics.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -302,7 +303,7 @@ class TestDefaultSolverContainerMetricsTimestampMapping:
                 column_name_mapping={"t_start": "start_ts", "t_stop": "stop_ts"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert solver.config.start_ts_col == "start_ts"
         assert solver.config.stop_ts_col == "stop_ts"
 
@@ -349,7 +350,7 @@ class TestDefaultSolverChannelTagsMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_channel_tags.query
         query.select(query.channel(channel_name="Engine RPM"))
         tags_df = solver.filter_container_tags(spark, query)
@@ -396,7 +397,7 @@ class TestDefaultSolverChannelMetricsMapping:
                 column_name_mapping={"run_id": "container_id", "signal_id": "channel_id"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_channel_metrics.query
         query.select(query.channel(channel_name="Engine RPM"))
         tags_df = solver.filter_container_tags(spark, query)
@@ -447,7 +448,7 @@ class TestDefaultSolverChannelsMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_custom_channels.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         result = query.select(eng_rpm.mean().alias("rpm_mean")).solve(spark, solver=solver)
@@ -539,7 +540,7 @@ class TestDefaultSolverFullyCustomMapping:
         )
 
     def test_end_to_end_solve_fully_custom(self, spark, db_fully_custom):
-        solver = DefaultSolver(spark, config=self._cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._cfg()))
         query = db_fully_custom.query
         query.where(TagSelector("model") == "Ateca")
         eng_rpm = query.channel(channel_name="Engine RPM")
@@ -574,7 +575,7 @@ class TestDefaultSolverDefaultConfig:
     def test_solver_with_empty_config_works_with_default_names(
         self, spark: SparkSession, db_default: MeasurementDB
     ):
-        solver = DefaultSolver(spark, config=SolverConfig())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig()))
         query = db_default.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         result = query.select(eng_rpm.mean().alias("rpm_mean")).solve(spark, solver=solver)

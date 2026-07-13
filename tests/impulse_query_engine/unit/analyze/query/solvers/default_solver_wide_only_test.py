@@ -27,6 +27,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
 )
 from impulse_query_engine.measurement_db import MeasurementDB
 from tests.conftest import basic_narrow_db, spark
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -265,7 +266,7 @@ class TestDefaultSolverEndToEndWideOnly:
                 }
             )
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         col_map = solver.config.col_map
         assert col_map == {
             "cid": "container_id",
@@ -289,7 +290,7 @@ class TestDefaultSolverEndToEndWideOnly:
                 }
             )
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert solver.config.container_id_col == "container_id"
         assert solver.config.channel_id_col == "channel_id"
         assert solver.config.tstart_col == "tstart"

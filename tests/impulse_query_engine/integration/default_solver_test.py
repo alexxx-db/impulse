@@ -24,6 +24,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
     TableConfig,
 )
 from impulse_query_engine.measurement_db import MeasurementDB
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 
 def _kvs_cfg(
@@ -54,7 +55,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Without any filter the solver should emit one result row per container."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
 
@@ -67,7 +68,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A matching TagExpression keeps all containers; a non-matching one drops all."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         query.where(TagSelector("brand") == "Seat")
@@ -86,7 +87,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """MetricExpression on container_metrics should narrow the solve result."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         query.where(MetricSelector("brand") == "Seat")
@@ -105,7 +106,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """TagExpression (stage 1) + MetricExpression (stage 2) should both be applied."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         query.where(TagSelector("brand") == "Seat")
@@ -127,7 +128,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """Event-gated stats aggregation should produce well-formed results per container."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
         veh_speed = query.channel(channel_name="Vehicle Speed Sensor")
@@ -156,7 +157,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A project_id with no containers should yield zero solve rows."""
-        solver = DefaultSolver(spark, config=_kvs_cfg("NON_EXISTENT_PROJECT"))
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg("NON_EXISTENT_PROJECT")))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
 
@@ -173,7 +174,7 @@ class TestDefaultSolverIntegration:
                 filters={"parent_id": "container_concept"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
 
@@ -190,7 +191,7 @@ class TestDefaultSolverIntegration:
                 filters={"parent_id": "no_such_concept"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
 
@@ -201,7 +202,7 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """``pre_filtered_containers_df`` restricts the solve to its container set."""
-        solver = DefaultSolver(spark, config=_kvs_cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg()))
         query = key_value_store_db.query
         pre = query.db.container_metrics(spark).where(F.col("container_id") == 1)
 
@@ -220,12 +221,9 @@ class TestDefaultSolverAliasIntegration:
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
         """Aliased channel selection should resolve via channel_mapping and produce results."""
-        solver = DefaultSolver(
-            spark,
-            config=_kvs_cfg(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg(
                 channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            ),
-        )
+            )))
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed")
 

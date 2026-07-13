@@ -1,23 +1,30 @@
-"""Configuration for solver column mappings.
+"""Configuration for the query engine.
 
-Provides Pydantic models that map silver-layer column names to the internal
-column names used by the solver classes, making the solvers independent
-of a specific data-layer naming convention.
+Provides the Pydantic models that configure the query-engine solvers:
 
-Each input table has its own :class:`TableConfig` section with an optional
-``column_name_mapping`` (physical column → internal name) and ``filters``
-(internal column → equality value).
+- :class:`QueryEngineConfig` — the top-level engine configuration: which solver to
+  use, the input data format (:class:`DataType`: RLE intervals vs. RAW point
+  samples), how RAW data is converted to intervals (:class:`RawEncoder`),
+  implausible-data filtering, batching, and the embedded
+  :class:`SolverConfig`.
+- :class:`SolverConfig` — per-table column-name mappings and equality
+  filters.  Each input table has its own :class:`TableConfig` section with an
+  optional ``column_name_mapping`` (physical column → internal name) and
+  ``filters`` (internal column → equality value).  Solvers apply the mapping
+  when reading a table; all subsequent processing uses the framework-internal
+  column names exposed as properties on :class:`SolverConfig`.
 
-Solvers apply the ``column_name_mapping`` when reading a table to rename
-physical columns to internal names.  All subsequent processing — including
-filter application — uses the framework-internal column names exposed as
-properties on :class:`SolverConfig`.
+``impulse_reporting`` composes :class:`QueryEngineConfig` into its top-level
+``ImpulseConfig`` (and re-exports these names from
+``impulse_reporting.config.config_parser`` for backward compatibility), so
+the user-facing JSON schema is defined here while the query engine remains
+usable standalone, without importing the reporting layer.
 """
 
 import json
-from enum import StrEnum
+from enum import Enum, StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class RawEncoder(StrEnum):
@@ -40,6 +47,34 @@ class RawEncoder(StrEnum):
 
     RLE = "RLE"
     INTERVAL = "INTERVAL"
+
+
+class DataType(StrEnum):
+    RAW = "RAW"
+    RLE = "RLE"
+
+
+class Solvers(Enum):
+    """
+    Enumeration of available solver types for the query engine.
+
+    ``DEFAULT_SOLVER`` is the single, unified solver. ``DELTA_SOLVER`` and
+    ``KEY_VALUE_STORE_SOLVER`` are **deprecated aliases** kept so that existing
+    report configs continue to deserialize; both now resolve to the same
+    ``DefaultSolver``. They will be removed in a future release.
+
+    Attributes
+    ----------
+    DEFAULT_SOLVER : str
+    DELTA_SOLVER : str
+        Deprecated alias for ``DEFAULT_SOLVER``.
+    KEY_VALUE_STORE_SOLVER : str
+        Deprecated alias for ``DEFAULT_SOLVER``.
+    """
+
+    DEFAULT_SOLVER = "DefaultSolver"
+    DELTA_SOLVER = "DeltaSolver"
+    KEY_VALUE_STORE_SOLVER = "KeyValueStoreSolver"
 
 
 class TableConfig(BaseModel):
@@ -381,3 +416,81 @@ class SolverConfig(BaseModel):
             "val": self.value_col,
             "conv": self.conversion_factor_col,
         }
+
+
+class QueryEngineConfig(BaseModel):
+    """
+    Configuration for the query engine solver.
+
+    Parameters
+    ----------
+    solver : Solvers, default=Solvers.DEFAULT_SOLVER
+        The solver type to use for query execution.
+    raw_encoder : RawEncoder, optional, default=None
+        Encoder used to convert RAW point data into intervals.  ``RLE``
+        collapses consecutive equal-valued samples into runs; ``INTERVAL``
+        only derives ``tend`` and drops exact duplicates.  Only takes effect
+        when ``data_type=RAW``; ignored for RLE input.  When omitted and
+        ``data_type=RAW``, it is resolved to ``RLE`` at validation time;
+        for RLE input the field stays ``None`` and is never consulted.
+    solver_config : SolverConfig, optional
+        Per-table column name mappings and filter configuration for
+        the solver.  Use this when your silver-layer tables use
+        non-default column names or when you need project/toolbox
+        scoping.  Key sub-fields:
+
+        - ``project_id`` (str): Top-level project filter value applied
+          to container_tags, container_metrics, and channel_mapping
+          tables when the corresponding columns exist after column
+          renaming.
+        - Per-table sections (``container_tags``, ``container_metrics``,
+          ``channel_mapping``, ``channels``, etc.) each with
+          ``column_name_mapping`` and ``filters`` dicts.
+
+        When omitted, all default column names are used and no
+        project/toolbox filtering is applied.
+
+    Notes
+    -----
+    The default solver is ``Solvers.DEFAULT_SOLVER``.  It selects channels
+    from a narrow EAV ``channel_tags`` table when ``source.channel_tags_table``
+    is configured, and otherwise directly from columns on ``channel_metrics``.
+    It operates either with a narrow EAV ``container_tags`` table or in a
+    wide-only data model when ``source.container_tags_table`` is not
+    configured.  (``DELTA_SOLVER`` and ``KEY_VALUE_STORE_SOLVER`` are
+    deprecated aliases that resolve to the same solver.)
+
+    - RLE channel data must contain 'container_id', 'channel_id', 'tstart', 'tend', 'value' columns
+    - RAW channel data must contain 'container_id', 'channel_id', 'timestamp', 'value' columns
+    """
+
+    solver: Solvers = Solvers.DEFAULT_SOLVER
+    data_type: DataType = DataType.RLE
+    drop_implausible_data: bool = False
+    raw_encoder: RawEncoder | None = None
+    solver_config: SolverConfig | None = None
+    batch_size: int = 500
+
+    @model_validator(mode="after")
+    def validate_drop_implausible_data_requires_raw(self):
+        """`drop_implausible_data=True` currently only takes effect with RAW data.
+
+        The filter is applied inside the RAW -> interval conversion path by the
+        selected ``raw_encoder`` (``RleEncoder`` / ``IntervalEncoder``).  RLE
+        input short-circuits that path and the flag is silently ignored, so we
+        reject the combination at config validation time.
+        """
+        if self.drop_implausible_data and self.data_type is not DataType.RAW:
+            raise ValueError(
+                "drop_implausible_data=True requires data_type=RAW. "
+                "The implausible-data filter is only applied during the RAW -> RLE "
+                "conversion path; RLE input is passed through unchanged."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def default_raw_encoder_for_raw_data(self):
+        """When ``data_type=RAW`` and ``raw_encoder`` is unset, default to RLE."""
+        if self.data_type is DataType.RAW and self.raw_encoder is None:
+            self.raw_encoder = RawEncoder.RLE
+        return self

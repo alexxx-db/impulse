@@ -12,11 +12,9 @@ from pyspark.sql import DataFrame, Window
 from impulse_query_engine.analyze.metadata.metric_expression import MetricExpression
 from impulse_query_engine.analyze.metadata.tag_expression import TagExpression
 from impulse_query_engine.model.series.sample_series import SampleSeries
-from impulse_reporting.config.config_parser import ImpulseConfig
-
 from .query_solver import QuerySolver
 from .series_cache import SeriesCache
-from .solver_config import RawEncoder, SolverConfig
+from .solver_config import DataType, QueryEngineConfig, RawEncoder
 from .utils.interval_encoder import IntervalEncoder
 from .utils.rle_encoder import RleEncoder
 
@@ -141,48 +139,36 @@ class DefaultSolver(QuerySolver):
     ----------
     spark : SparkSession
         Spark session used for query execution.
-    config : SolverConfig or None
-        Optional configuration.  When *None* (default) no filtering by
-        project or toolbox is applied.
-    is_raw_data : bool, optional
-        Whether the input data is raw point data (timestamp column)
-        rather than RLE format (tstart/tend columns).
-    drop_implausible_data : bool, optional
-        Whether to drop data points marked as implausible before
-        processing.  Requires an ``is_plausible`` column in the
-        silver layer.
-    raw_encoder : RawEncoder, optional
-        Which encoder converts RAW point data into intervals for solving.
-        ``RawEncoder.RLE`` (default) run-length encodes equal-valued runs;
-        ``RawEncoder.INTERVAL`` only derives ``tend`` and drops exact
-        duplicates.  Only consulted when ``is_raw_data`` is ``True``.
+    query_engine : QueryEngineConfig or None
+        The query-engine configuration.  Carries the input ``data_type``
+        (RLE intervals vs. RAW point samples), the ``raw_encoder`` used to
+        convert RAW data into intervals, ``drop_implausible_data``, and the
+        per-table column mappings / filters in ``solver_config``.  When
+        *None* (default), a default :class:`QueryEngineConfig` is used: RLE input,
+        no implausible-data filtering, and no project/toolbox scoping.
     """
 
     def __init__(
         self,
         spark,
-        impulse_config: ImpulseConfig,
-        is_raw_data: bool = False,
-        drop_implausible_data: bool = False,
+        query_engine: QueryEngineConfig | None = None,
     ):
-        super().__init__(config=impulse_config.query_engine.solver_config)
-        self.impulse_config = impulse_config
+        self.query_engine: QueryEngineConfig = query_engine or QueryEngineConfig()
+        super().__init__(config=self.query_engine.solver_config)
         self.spark = spark
-        self.is_raw_data = is_raw_data
-        self.drop_implausible_data: bool = drop_implausible_data
+        self.is_raw_data = self.query_engine.data_type is DataType.RAW
+        self.drop_implausible_data: bool = self.query_engine.drop_implausible_data
         self.channel_encoder: RleEncoder | IntervalEncoder = self._build_channel_encoder()
 
     def _build_channel_encoder(self) -> RleEncoder | IntervalEncoder:
-        """Construct the raw -> interval encoder selected by ``raw_encoder``.
+        """Construct the raw -> interval encoder selected by ``query_engine.raw_encoder``.
 
         Both encoders expose ``prepare_channels_df`` and honor
         ``drop_implausible_data``; they differ only in whether equal-valued
-        consecutive samples are collapsed into a single run (RLE) or kept as
-        separate intervals (INTERVAL).
+        consecutive samples are collapsed into a single interval (RLE) or kept
+        as separate intervals (INTERVAL).
         """
-
-
-        if self.impulse_config.query_engine.raw_encoder is RawEncoder.INTERVAL:
+        if self.query_engine.raw_encoder is RawEncoder.INTERVAL:
             return IntervalEncoder(
                 config=self.config,
                 drop_implausible_data_points=self.drop_implausible_data,

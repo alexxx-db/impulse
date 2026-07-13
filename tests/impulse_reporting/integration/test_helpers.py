@@ -24,7 +24,7 @@ from impulse_reporting.aggregations.stats_aggregator import StatsAggregator
 from impulse_reporting.config.config_parser import (
     ImpulseConfig,
     IncrementalConfig,
-    QueryEngine,
+    QueryEngineConfig,
     Solvers,
     Source,
     UnitySink,
@@ -138,7 +138,7 @@ def create_alias_report(
             schema="gold",
             table_prefix=table_prefix,
         ),
-        query_engine=QueryEngine(
+        query_engine=QueryEngineConfig(
             solver=Solvers.KEY_VALUE_STORE_SOLVER,
             solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",

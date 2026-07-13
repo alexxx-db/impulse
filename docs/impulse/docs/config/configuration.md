@@ -6,7 +6,11 @@ query-engine solver, incremental processing, and which container columns
 get surfaced into the gold-layer measurement dimension. Configuration is
 defined as JSON (or an equivalent Python dictionary) and validated using
 Pydantic models. The canonical schema lives in
-[`src/impulse_reporting/config/config_parser.py`](https://github.com/databrickslabs/impulse/blob/main/src/impulse_reporting/config/config_parser.py).
+[`src/impulse_reporting/config/config_parser.py`](https://github.com/databrickslabs/impulse/blob/main/src/impulse_reporting/config/config_parser.py);
+the `query_engine` section (`QueryEngineConfig`, including `SolverConfig`) is
+defined in
+[`src/impulse_query_engine/analyze/query/solvers/solver_config.py`](https://github.com/databrickslabs/impulse/blob/main/src/impulse_query_engine/analyze/query/solvers/solver_config.py)
+and re-exported from `config_parser` for backward compatibility.
 
 ## Quick example
 

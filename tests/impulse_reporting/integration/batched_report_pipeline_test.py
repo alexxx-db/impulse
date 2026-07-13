@@ -15,7 +15,7 @@ from impulse_reporting.aggregations.histogram import Histogram, HistogramDuratio
 from impulse_reporting.aggregations.stats_aggregator import StatsAggregator
 from impulse_reporting.config.config_parser import (
     ImpulseConfig,
-    QueryEngine,
+    QueryEngineConfig,
     Solvers,
     Source,
     UnitySink,
@@ -38,7 +38,7 @@ def _build_batched_report(spark: SparkSession) -> tuple[Report, dict[str, object
             schema="gold",
             table_prefix="evaluation",
         ),
-        query_engine=QueryEngine(
+        query_engine=QueryEngineConfig(
             solver=Solvers.KEY_VALUE_STORE_SOLVER,
             batch_size=1,
         ),

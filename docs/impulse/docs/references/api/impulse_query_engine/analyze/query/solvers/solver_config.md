@@ -3,20 +3,27 @@ sidebar_label: solver_config
 title: impulse_query_engine.analyze.query.solvers.solver_config
 ---
 
-Configuration for solver column mappings.
+Configuration for the query engine.
 
-Provides Pydantic models that map silver-layer column names to the internal
-column names used by the solver classes, making the solvers independent
-of a specific data-layer naming convention.
+Provides the Pydantic models that configure the query-engine solvers:
 
-Each input table has its own :class:`TableConfig` section with an optional
-``column_name_mapping`` (physical column → internal name) and ``filters``
-(internal column → equality value).
+- :class:`QueryEngineConfig` — the top-level engine configuration: which solver to
+  use, the input data format (:class:`DataType`: RLE intervals vs. RAW point
+  samples), how RAW data is converted to intervals (:class:`RawEncoder`),
+  implausible-data filtering, batching, and the embedded
+  :class:`SolverConfig`.
+- :class:`SolverConfig` — per-table column-name mappings and equality
+  filters.  Each input table has its own :class:`TableConfig` section with an
+  optional ``column_name_mapping`` (physical column → internal name) and
+  ``filters`` (internal column → equality value).  Solvers apply the mapping
+  when reading a table; all subsequent processing uses the framework-internal
+  column names exposed as properties on :class:`SolverConfig`.
 
-Solvers apply the ``column_name_mapping`` when reading a table to rename
-physical columns to internal names.  All subsequent processing — including
-filter application — uses the framework-internal column names exposed as
-properties on :class:`SolverConfig`.
+``impulse_reporting`` composes :class:`QueryEngineConfig` into its top-level
+``ImpulseConfig`` (and re-exports these names from
+``impulse_reporting.config.config_parser`` for backward compatibility), so
+the user-facing JSON schema is defined here while the query engine remains
+usable standalone, without importing the reporting layer.
 
 
 ## RawEncoder
@@ -37,9 +44,29 @@ RLE
     ``value`` within a container/channel into a single interval (see
     :class:`~impulse_query_engine.analyze.query.solvers.utils.rle_encoder.RleEncoder`).
 INTERVAL
-    Derive ``tend`` from the following sample's timestamp, *without* merging equal-valued runs (see
+    Derive ``tend`` from the following sample's timestamp and drop exact
+    duplicate points, *without* merging equal-valued runs (see
     :class:`~impulse_query_engine.analyze.query.solvers.utils.interval_encoder.IntervalEncoder`).
 
+
+## Solvers
+
+```python
+class Solvers(Enum)
+```
+
+Enumeration of available solver types for the query engine.
+
+``DEFAULT_SOLVER`` is the single, unified solver. ``DELTA_SOLVER`` and
+``KEY_VALUE_STORE_SOLVER`` are **deprecated aliases** kept so that existing
+report configs continue to deserialize; both now resolve to the same
+``DefaultSolver``. They will be removed in a future release.
+
+**Arguments**:
+
+- `DEFAULT_SOLVER` (`str`): None
+- `DELTA_SOLVER` (`str`): Deprecated alias for ``DEFAULT_SOLVER``.
+- `KEY_VALUE_STORE_SOLVER` (`str`): Deprecated alias for ``DEFAULT_SOLVER``.
 
 ## TableConfig
 
@@ -385,6 +412,24 @@ def group_id_col() -> str
 Internal column name for the unit group id on the unit_conversion table.
 
 
+#### timestamp\_col
+
+```python
+def timestamp_col() -> str
+```
+
+Internal column name for the timestamp on the channels table for raw encoded channel data.
+
+
+#### is\_plausible\_col
+
+```python
+def is_plausible_col() -> str
+```
+
+Internal column name for the plausibility flag on the channels table for raw encoded channel data.
+
+
 #### effective\_alias\_join\_keys
 
 ```python
@@ -409,5 +454,61 @@ def col_map() -> dict[str, str]
 ```
 
 Short-key → internal-column-name mapping for UDFs and caches.
+
+
+## QueryEngineConfig
+
+```python
+class QueryEngineConfig(BaseModel)
+```
+
+Configuration for the query engine solver.
+
+**Arguments**:
+
+- `solver` (`Solvers, default=Solvers.DEFAULT_SOLVER`): The solver type to use for query execution.
+- `raw_encoder` (`RawEncoder, optional, default=None`): Encoder used to convert RAW point data into intervals.  ``RLE``
+collapses consecutive equal-valued samples into runs; ``INTERVAL``
+only derives ``tend`` and drops exact duplicates.  Only takes effect
+when ``data_type=RAW``; ignored for RLE input.  When omitted and
+``data_type=RAW``, it is resolved to ``RLE`` at validation time;
+for RLE input the field stays ``None`` and is never consulted.
+- `solver_config` (`SolverConfig`): Per-table column name mappings and filter configuration for
+the solver.  Use this when your silver-layer tables use
+non-default column names or when you need project/toolbox
+scoping.  Key sub-fields:
+
+- ``project_id`` (str): Top-level project filter value applied
+  to container_tags, container_metrics, and channel_mapping
+  tables when the corresponding columns exist after column
+  renaming.
+- Per-table sections (``container_tags``, ``container_metrics``,
+  ``channel_mapping``, ``channels``, etc.) each with
+  ``column_name_mapping`` and ``filters`` dicts.
+
+When omitted, all default column names are used and no
+project/toolbox filtering is applied.
+
+#### validate\_drop\_implausible\_data\_requires\_raw
+
+```python
+def validate_drop_implausible_data_requires_raw()
+```
+
+`drop_implausible_data=True` currently only takes effect with RAW data.
+
+The filter is applied inside the RAW -> interval conversion path by the
+selected ``raw_encoder`` (``RleEncoder`` / ``IntervalEncoder``).  RLE
+input short-circuits that path and the flag is silently ignored, so we
+reject the combination at config validation time.
+
+
+#### default\_raw\_encoder\_for\_raw\_data
+
+```python
+def default_raw_encoder_for_raw_data()
+```
+
+When ``data_type=RAW`` and ``raw_encoder`` is unset, default to RLE.
 
 

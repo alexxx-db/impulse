@@ -37,6 +37,7 @@ from impulse_query_engine.analyze.query.solvers.solver_config import (
 )
 from impulse_query_engine.measurement_db import MeasurementDB, MeasurementDBConfig
 from tests.conftest import spark
+from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngineConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -208,7 +209,7 @@ class TestCustomEntityIdMapping:
 
     def test_no_filter_returns_all_project_containers(self, spark, cfg, db_with_custom_entity_col):
         """All entity_ids from SAMPLE_PROJECT should be returned, aliased to container_id."""
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_entity_col.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -216,7 +217,7 @@ class TestCustomEntityIdMapping:
 
     def test_with_metric_filter_and_custom_entity_col(self, spark, cfg, db_with_custom_entity_col):
         """TagExpression should work after pivot with renamed entity_id."""
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_entity_col.query
         query.where(TagSelector("model") == "Ateca")
         result = solver.filter_container_tags(spark, query)
@@ -225,19 +226,16 @@ class TestCustomEntityIdMapping:
 
     def test_wrong_entity_col_returns_error_or_empty(self, spark, db_with_custom_entity_col):
         """Default config without column rename — physical column 'object_id' is unknown."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_with_custom_entity_col.query
         with pytest.raises(AnalysisException):
             solver.filter_container_tags(spark, query).collect()
 
     def test_with_tag_filter_and_custom_entity_col(self, spark, cfg, db_with_custom_entity_col):
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_entity_col.query
         query.where(TagSelector("model") == "Ateca")
         result = solver.filter_container_tags(spark, query)
@@ -279,7 +277,7 @@ class TestCustomProjectIdMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_project_col.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -297,7 +295,7 @@ class TestCustomProjectIdMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_project_col.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -305,13 +303,10 @@ class TestCustomProjectIdMapping:
 
     def test_wrong_project_col_mapping_fails(self, spark, db_with_custom_project_col):
         """Default config (no rename) expects 'project_id' but the table has 'proj'."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_with_custom_project_col.query
         with pytest.raises(AnalysisException):
             solver.filter_container_tags(spark, query).collect()
@@ -351,7 +346,7 @@ class TestCustomValueColMapping:
                 },
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_value_col.query
         query.where(TagSelector("model") == "Leon")
         result = solver.filter_container_tags(spark, query)
@@ -360,13 +355,10 @@ class TestCustomValueColMapping:
 
     def test_default_value_col_fails_on_renamed_data(self, spark, db_with_custom_value_col):
         """Default config expects 'value' but the EAV table has 'attr_val'."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_with_custom_value_col.query
         query.where(TagSelector("model") == "Leon")
         with pytest.raises(AnalysisException):
@@ -413,7 +405,7 @@ class TestCustomContainerIdMapping:
 
     def test_filter_container_metrics_joins_on_internal_name(self, spark, db_with_custom_cid):
         """Stage 2 should join on 'container_id' (internal name) after renaming."""
-        solver = DefaultSolver(spark, config=self._cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._cfg()))
         query = db_with_custom_cid.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -423,7 +415,7 @@ class TestCustomContainerIdMapping:
 
     def test_filter_container_tags_returns_internal_name(self, spark, db_with_custom_cid):
         """EAV table uses default 'container_id'; result should also use it."""
-        solver = DefaultSolver(spark, config=self._cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._cfg()))
         query = db_with_custom_cid.query
         result = solver.filter_container_tags(spark, query)
         assert "container_id" in result.columns
@@ -432,7 +424,7 @@ class TestCustomContainerIdMapping:
 
     def test_tag_filter_with_custom_cid(self, spark, db_with_custom_cid):
         """TagExpression filter + custom container_id through both stages."""
-        solver = DefaultSolver(spark, config=self._cfg())
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._cfg()))
         query = db_with_custom_cid.query
         query.where(TagSelector("model") == "Ateca")
         tags_df = solver.filter_container_tags(spark, query)
@@ -495,7 +487,7 @@ class TestFullyCustomEavMapping:
         return self._make_cfg()
 
     def test_no_filter_fully_custom(self, spark, db_fully_custom, full_cfg):
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         result = solver.filter_container_tags(spark, query)
         assert "container_id" in result.columns
@@ -503,7 +495,7 @@ class TestFullyCustomEavMapping:
         assert ids == {1, 2, 3}
 
     def test_single_metric_filter_fully_custom(self, spark, db_fully_custom, full_cfg):
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         query.where(TagSelector("model") == "Leon")
         result = solver.filter_container_tags(spark, query)
@@ -511,7 +503,7 @@ class TestFullyCustomEavMapping:
         assert ids == {1}
 
     def test_and_filter_fully_custom(self, spark, db_fully_custom, full_cfg):
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         query.where((TagSelector("brand") == "Seat") & (TagSelector("model") == "Ibiza"))
         result = solver.filter_container_tags(spark, query)
@@ -519,7 +511,7 @@ class TestFullyCustomEavMapping:
         assert ids == {2}
 
     def test_or_filter_fully_custom(self, spark, db_fully_custom, full_cfg):
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         query.where((TagSelector("model") == "Leon") | (TagSelector("model") == "Ateca"))
         result = solver.filter_container_tags(spark, query)
@@ -528,7 +520,7 @@ class TestFullyCustomEavMapping:
 
     def test_stages_1_and_2_fully_custom(self, spark, db_fully_custom, full_cfg):
         """Full pipeline: filter_container_tags → filter_container_metrics."""
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         query.where(TagSelector("model") == "Ibiza")
         tags_df = solver.filter_container_tags(spark, query)
@@ -537,21 +529,21 @@ class TestFullyCustomEavMapping:
         assert ids == {2}
 
     def test_non_existent_project_fully_custom(self, spark, db_fully_custom):
-        solver = DefaultSolver(spark, config=self._make_cfg("NO_SUCH_PROJECT"))
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._make_cfg("NO_SUCH_PROJECT")))
         query = db_fully_custom.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
 
     def test_other_project_fully_custom(self, spark, db_fully_custom):
         """SAMPLE_PROJECT_B should only contain entity 4."""
-        solver = DefaultSolver(spark, config=self._make_cfg("SAMPLE_PROJECT_B"))
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=self._make_cfg("SAMPLE_PROJECT_B")))
         query = db_fully_custom.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
         assert ids == {4}
 
     def test_single_tag_filter_fully_custom(self, spark, db_fully_custom, full_cfg):
-        solver = DefaultSolver(spark, config=full_cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=full_cfg))
         query = db_fully_custom.query
         query.where(TagSelector("model") == "Leon")
         result = solver.filter_container_tags(spark, query)
@@ -603,7 +595,7 @@ class TestCustomChannelColumnMapping:
                 }
             )
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert solver.config.col_map == {
             "cid": "container_id",
             "ch": "channel_id",
@@ -621,7 +613,7 @@ class TestCustomChannelColumnMapping:
             "signal_val": "value",
         }
         cfg = SolverConfig(channels=TableConfig(column_name_mapping=mapping))
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert solver.config.channels.column_name_mapping == mapping
 
     def test_properties_return_internal_names_with_custom_mapping(self, spark):
@@ -635,7 +627,7 @@ class TestCustomChannelColumnMapping:
                 }
             )
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         assert solver.config.container_id_col == "container_id"
         assert solver.config.channel_id_col == "channel_id"
         assert solver.config.tstart_col == "tstart"
@@ -684,13 +676,10 @@ class TestEntityIdSameAsContainerId:
 
     def test_no_rename_needed(self, spark, db_entity_is_cid):
         """When the EAV table already uses 'container_id', no column_name_mapping is needed."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_entity_is_cid.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -698,13 +687,10 @@ class TestEntityIdSameAsContainerId:
 
     def test_metric_filter_no_rename(self, spark, db_entity_is_cid):
         """TagExpression filter works without any column rename."""
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_entity_is_cid.query
         query.where(TagSelector("model") == "Ibiza")
         result = solver.filter_container_tags(spark, query)
@@ -712,26 +698,20 @@ class TestEntityIdSameAsContainerId:
         assert ids == {2}
 
     def test_no_mapping_needed(self, spark, db_entity_is_cid):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_entity_is_cid.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
         assert ids == {1, 2}
 
     def test_tag_filter_no_mapping(self, spark, db_entity_is_cid):
-        solver = DefaultSolver(
-            spark,
-            config=SolverConfig(
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",
                 container_tags=TableConfig(column_name_mapping={"element_id": "key"}),
-            ),
-        )
+            )))
         query = db_entity_is_cid.query
         query.where(TagSelector("model") == "Ibiza")
         result = solver.filter_container_tags(spark, query)
@@ -774,7 +754,7 @@ class TestCustomParentIdMapping:
                 filters={"parent_id": "container_concept"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_parent_col.query
         result = solver.filter_container_tags(spark, query)
         ids = {row.container_id for row in result.collect()}
@@ -793,7 +773,7 @@ class TestCustomParentIdMapping:
                 filters={"parent_id": "wrong_concept"},
             ),
         )
-        solver = DefaultSolver(spark, config=cfg)
+        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=cfg))
         query = db_with_custom_parent_col.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0

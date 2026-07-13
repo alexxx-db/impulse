@@ -19,7 +19,7 @@ from impulse_reporting.config.config_parser import (
     ContainerFilters,
     ImpulseConfig,
     MetricFilter,
-    QueryEngine,
+    QueryEngineConfig,
     Solvers,
     Source,
     UnitySink,
@@ -72,7 +72,7 @@ def test_simple_report1(spark, setup_narrow_db):
                 ]
             ]
         ),
-        query_engine=QueryEngine(solver=Solvers.DELTA_SOLVER),
+        query_engine=QueryEngineConfig(solver=Solvers.DELTA_SOLVER),
         measurement_dimensions=["container_id"],
     )
 
@@ -766,7 +766,7 @@ def test_simple_report_key_value_store(spark, key_value_store_db):
             schema="gold",
             table_prefix="evaluation",
         ),
-        query_engine=QueryEngine(
+        query_engine=QueryEngineConfig(
             solver=Solvers.KEY_VALUE_STORE_SOLVER,
             solver_config=SolverConfig(
                 project_id="SAMPLE_PROJECT",

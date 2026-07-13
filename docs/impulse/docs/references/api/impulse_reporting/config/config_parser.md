@@ -43,25 +43,6 @@ Validate if a string is a valid Unity Catalog entity name.
 
 `str`: The validated entity name if valid.
 
-## Solvers
-
-```python
-class Solvers(Enum)
-```
-
-Enumeration of available solver types for the query engine.
-
-``DEFAULT_SOLVER`` is the single, unified solver. ``DELTA_SOLVER`` and
-``KEY_VALUE_STORE_SOLVER`` are **deprecated aliases** kept so that existing
-report configs continue to deserialize; both now resolve to the same
-``DefaultSolver``. They will be removed in a future release.
-
-**Arguments**:
-
-- `DEFAULT_SOLVER` (`str`): None
-- `DELTA_SOLVER` (`str`): Deprecated alias for ``DEFAULT_SOLVER``.
-- `KEY_VALUE_STORE_SOLVER` (`str`): Deprecated alias for ``DEFAULT_SOLVER``.
-
 ## Source
 
 ```python
@@ -169,62 +150,6 @@ The resulting group expressions are then OR-combined.
 - `tag_filters` (`list[list[TagFilter]]`): Tag-based filter groups (applied on container_tags_table).
 - `metric_filters` (`list[list[MetricFilter]]`): Metric-based filter groups (applied on container_metrics_table).
 
-## QueryEngine
-
-```python
-class QueryEngine(BaseModel)
-```
-
-Configuration for the query engine solver.
-
-**Arguments**:
-
-- `solver` (`Solvers, default=Solvers.DEFAULT_SOLVER`): The solver type to use for query execution.
-- `raw_encoder` (`RawEncoder, optional, default=None`): Encoder used to convert RAW point data into intervals.  ``RLE``
-collapses consecutive equal-valued samples into runs; ``INTERVAL``
-only derives ``tend`` and drops exact duplicates.  Only takes effect
-when ``data_type=RAW``; ignored for RLE input.  When omitted and
-``data_type=RAW``, it is resolved to ``RLE`` at validation time;
-for RLE input the field stays ``None`` and is never consulted.
-- `solver_config` (`SolverConfig`): Per-table column name mappings and filter configuration for
-the solver.  Use this when your silver-layer tables use
-non-default column names or when you need project/toolbox
-scoping.  Key sub-fields:
-
-- ``project_id`` (str): Top-level project filter value applied
-  to container_tags, container_metrics, and channel_mapping
-  tables when the corresponding columns exist after column
-  renaming.
-- Per-table sections (``container_tags``, ``container_metrics``,
-  ``channel_mapping``, ``channels``, etc.) each with
-  ``column_name_mapping`` and ``filters`` dicts.
-
-When omitted, all default column names are used and no
-project/toolbox filtering is applied.
-
-#### validate\_drop\_implausible\_data\_requires\_raw
-
-```python
-def validate_drop_implausible_data_requires_raw()
-```
-
-`drop_implausible_data=True` currently only takes effect with RAW data.
-
-The filter is applied inside the RAW -> interval conversion path by the
-selected ``raw_encoder`` (``RleEncoder`` / ``IntervalEncoder``).  RLE
-input short-circuits that path and the flag is silently ignored, so we
-reject the combination at config validation time.
-
-
-#### default\_raw\_encoder\_for\_raw\_data
-
-```python
-def default_raw_encoder_for_raw_data()
-```
-
-When ``data_type=RAW`` and ``raw_encoder`` is unset, default to RLE.
-
-
 ## IncrementalConfig
 
 ```python
@@ -255,7 +180,7 @@ Attributes
      Configuration for output data location.
  container_filters : ContainerFilters, optional
      Optional container-level filters (tag-based and/or metric-based).
- query_engine : QueryEngine, optional
+ query_engine : QueryEngineConfig, optional
      Optional query engine configuration. Defaults to Solvers.DEFAULT_SOLVER.
  incremental : IncrementalConfig, optional
      Optional incremental processing configuration. Defaults to IncrementalConfig().
