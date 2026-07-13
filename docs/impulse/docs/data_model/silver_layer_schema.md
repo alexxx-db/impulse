@@ -352,6 +352,22 @@ strategy is selected by
 - **`INTERVAL`** — only derives `tend` and drops exact duplicate points;
   equal-valued runs remain separate intervals.
 
+:::note How Impulse interprets intervals
+
+- A time series is considered **valid within its `[tstart, tend)`
+  intervals**. Operations like time-series synchronization use these
+  validity windows.
+- For RAW input, `tend` is derived from the **next sample's timestamp**;
+  the last sample's `tend` falls back to its own timestamp.
+- A **duplicate point** is a row whose timestamp *and* value both equal
+  the next row's; duplicates are always dropped.
+- `RLE` (default) additionally merges equal-valued runs **on the fly to
+  reduce memory consumption**; `INTERVAL` keeps **every original sample**
+  and only adds `tend` — choose it when downstream analysis needs all
+  original timestamps.
+
+:::
+
 | Column         | Type     | Nullable | Description                      |
 |----------------|----------|----------|----------------------------------|
 | `container_id` | `long`   | No       | Parent container identifier.     |
