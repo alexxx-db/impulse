@@ -360,8 +360,7 @@ strategy is selected by
 - **Deriving `tend`.** Within each `(container_id, channel_id)`, samples
   are ordered by timestamp and each sample's `tend` is set to the *next*
   sample's timestamp. The last sample in a channel has no successor, so
-  its `tend` falls back to its own timestamp — a zero-length interval that
-  carries no duration and is dropped.
+  its `tend` falls back to its own timestamp.
 - **Identifying redundancy differs by encoder.** `INTERVAL` drops a
   **duplicate point** — a row whose timestamp *and* value both equal the
   next row's — and keeps every other sample as its own interval. `RLE`
@@ -387,7 +386,7 @@ strategy is selected by
 An optional `is_plausible: boolean` column may be present on `channels`
 in either format. It is **only consulted** when the solver is
 constructed with `drop_implausible_data=True` — in that mode, samples
-with `is_plausible = False` are filtered during the raw→interval
+with `is_plausible = False` are filtered during the raw→interval|rle
 conversion (both `raw_encoder` variants honor the flag). If the
 flag is `False` (the default), the column is ignored and may be omitted.
 

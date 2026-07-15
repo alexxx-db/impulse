@@ -19,8 +19,6 @@ timestamp (``tstart``) to the timestamp at which the value next changes
 (``tend``).  This removes redundant points from signals that stay
 constant over time.
 
-Unlike
-
 
 #### \_\_init\_\_
 

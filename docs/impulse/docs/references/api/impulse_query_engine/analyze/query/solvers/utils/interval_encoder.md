@@ -21,7 +21,7 @@ Only **duplicate points** are dropped: a row is a duplicate when both its
 ``value`` and ``timestamp`` equal the next row's (compared with
 ``eqNullSafe``, so two ``NULL`` values count as equal).  Every other
 sample is kept as its own interval, so the original timestamps are
-preserved.  Contrast with
+preserved.
 
 
 #### \_\_init\_\_

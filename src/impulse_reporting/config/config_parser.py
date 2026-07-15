@@ -6,9 +6,9 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, field_validator, model_validator
 
 from impulse_query_engine.analyze.query.solvers.solver_config import (
-    DataType as DataType,
-    QueryEngineConfig as QueryEngineConfig,
-    Solvers as Solvers,
+    DataType,
+    QueryEngineConfig,
+    Solvers,
 )
 
 

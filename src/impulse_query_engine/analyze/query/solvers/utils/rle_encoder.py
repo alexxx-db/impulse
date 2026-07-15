@@ -14,13 +14,6 @@ class RleEncoder:
     timestamp (``tstart``) to the timestamp at which the value next changes
     (``tend``).  This removes redundant points from signals that stay
     constant over time.
-
-    Unlike
-    :class:`~impulse_query_engine.analyze.query.solvers.utils.interval_encoder.IntervalEncoder`,
-    which drops only exact duplicate points and keeps every other sample,
-    ``RleEncoder`` merges by value alone, so equal-valued samples collapse
-    regardless of their timestamps -- fewer intervals, lower memory, but the
-    intermediate timestamps within a run are not preserved.
     """
 
     def __init__(

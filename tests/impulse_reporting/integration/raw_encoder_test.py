@@ -146,6 +146,7 @@ def test_rle_and_interval_encoders_produce_same_histogram(spark, setup_raw_chann
 # drop_implausible_data = True: the implausible 3100 sample is removed
 # ---------------------------------------------------------------------------
 
+
 def test_rle_encoder_drops_implausible_sample(spark, setup_raw_channels_db):
     """RLE with ``drop_implausible_data`` removes the implausible sample's duration.
 

@@ -17,9 +17,7 @@ class IntervalEncoder:
     ``value`` and ``timestamp`` equal the next row's (compared with
     ``eqNullSafe``, so two ``NULL`` values count as equal).  Every other
     sample is kept as its own interval, so the original timestamps are
-    preserved.  Contrast with
-    :class:`~impulse_query_engine.analyze.query.solvers.utils.rle_encoder.RleEncoder`,
-    which additionally merges consecutive equal-valued runs.
+    preserved.
     """
 
     def __init__(
