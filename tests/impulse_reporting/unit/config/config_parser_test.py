@@ -1,16 +1,18 @@
 import pytest
 from pydantic import ValidationError
 
+from impulse_query_engine.analyze.query.solvers.solver_config import (
+    DataType,
+    RawEncoder,
+    Solvers,
+)
 from impulse_reporting.config.config_parser import (
     CastType,
     Comparator,
     ContainerFilters,
-    DataType,
     IncrementalConfig,
     ImpulseConfig,
     MetricFilter,
-    RawEncoder,
-    Solvers,
     TagFilter,
     is_valid_table_name,
     is_valid_unity_entity_name,

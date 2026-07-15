@@ -357,14 +357,21 @@ strategy is selected by
 - A time series is considered **valid within its `[tstart, tend)`
   intervals**. Operations like time-series synchronization use these
   validity windows.
-- For RAW input, `tend` is derived from the **next sample's timestamp**;
-  the last sample's `tend` falls back to its own timestamp.
-- A **duplicate point** is a row whose timestamp *and* value both equal
-  the next row's; duplicates are always dropped.
-- `RLE` (default) additionally merges equal-valued runs **on the fly to
-  reduce memory consumption**; `INTERVAL` keeps **every original sample**
-  and only adds `tend` — choose it when downstream analysis needs all
-  original timestamps.
+- **Deriving `tend`.** Within each `(container_id, channel_id)`, samples
+  are ordered by timestamp and each sample's `tend` is set to the *next*
+  sample's timestamp. The last sample in a channel has no successor, so
+  its `tend` falls back to its own timestamp — a zero-length interval that
+  carries no duration and is dropped.
+- **Identifying redundancy differs by encoder.** `INTERVAL` drops a
+  **duplicate point** — a row whose timestamp *and* value both equal the
+  next row's — and keeps every other sample as its own interval. `RLE`
+  instead merges a **run** — consecutive samples that share the same
+  value — into a single `[tstart, tend)` interval, regardless of their
+  timestamps.
+- `RLE` (default) does this merging **on the fly to reduce memory
+  consumption**; `INTERVAL` keeps **every original sample** and only adds
+  `tend` — choose it when downstream analysis needs all original
+  timestamps.
 
 :::
 

@@ -5,11 +5,22 @@ from impulse_query_engine.analyze.query.solvers.solver_config import SolverConfi
 
 
 class RleEncoder:
-    """Utility class for run-length encoding raw channel data.
+    """Run-length encode RAW point samples into ``[tstart, tend)`` intervals.
 
-    Consecutive samples that share the same ``value`` within a ``container_id`` /
-    ``channel_id`` are collapsed into a single interval, removing redundant points
-    from signals that stay constant over time.
+    Within each ``(container_id, channel_id)`` the samples are ordered by
+    timestamp and a new interval starts whenever ``value`` changes.  Each
+    resulting **run** -- one or more consecutive samples sharing the same
+    value -- becomes a single interval spanning from the run's first
+    timestamp (``tstart``) to the timestamp at which the value next changes
+    (``tend``).  This removes redundant points from signals that stay
+    constant over time.
+
+    Unlike
+    :class:`~impulse_query_engine.analyze.query.solvers.utils.interval_encoder.IntervalEncoder`,
+    which drops only exact duplicate points and keeps every other sample,
+    ``RleEncoder`` merges by value alone, so equal-valued samples collapse
+    regardless of their timestamps -- fewer intervals, lower memory, but the
+    intermediate timestamps within a run are not preserved.
     """
 
     def __init__(
