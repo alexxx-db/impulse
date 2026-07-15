@@ -406,7 +406,7 @@ when your physical column has a different name.
 
 For raw-format `channels`, the same internal names apply except that
 `timestamp` replaces the `tstart`/`tend` pair; the engine derives `tend`
-during raw→interval conversion (see `query_engine.raw_encoder`).
+during raw→interval|rle conversion (see `query_engine.raw_encoder`).
 
 ---
 
