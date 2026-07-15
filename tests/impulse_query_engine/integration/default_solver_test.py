@@ -157,7 +157,9 @@ class TestDefaultSolverIntegration:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A project_id with no containers should yield zero solve rows."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg("NON_EXISTENT_PROJECT")))
+        solver = DefaultSolver(
+            spark, QueryEngineConfig(solver_config=_kvs_cfg("NON_EXISTENT_PROJECT"))
+        )
         query = key_value_store_db.query
         eng_rpm = query.channel(channel_name="Engine RPM")
 
@@ -221,9 +223,16 @@ class TestDefaultSolverAliasIntegration:
         self, spark: SparkSession, key_value_store_alias_db: MeasurementDB
     ):
         """Aliased channel selection should resolve via channel_mapping and produce results."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_kvs_cfg(
-                channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-            )))
+        solver = DefaultSolver(
+            spark,
+            QueryEngineConfig(
+                solver_config=_kvs_cfg(
+                    channel_mapping=ChannelMappingConfig(
+                        filters={"toolbox_id": "container_concept"}
+                    ),
+                )
+            ),
+        )
         query = key_value_store_alias_db.query
         engine_speed = query.channel_with_alias(channel_alias="engine_speed")
 

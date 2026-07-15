@@ -20,11 +20,16 @@ from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngine
 
 
 def _solver(spark: SparkSession) -> DefaultSolver:
-    return DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
-            project_id="SAMPLE_PROJECT",
-            container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
-            channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-        )))
+    return DefaultSolver(
+        spark,
+        QueryEngineConfig(
+            solver_config=SolverConfig(
+                project_id="SAMPLE_PROJECT",
+                container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
+                channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
+            )
+        ),
+    )
 
 
 def _expected_raw_values(channels_csv_path: str, container_id: int, channel_id: int) -> np.ndarray:
@@ -335,14 +340,21 @@ class TestSourceUnitResolution:
         key_value_store_unit_conversion_db.config.debug_tables["channel_metrics"] = cm_renamed
 
         try:
-            solver = DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
-                    project_id="SAMPLE_PROJECT",
-                    container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
-                    channel_metrics=TableConfig(column_name_mapping={"phys_unit": "unit"}),
-                    channel_mapping=ChannelMappingConfig(
-                        filters={"toolbox_id": "container_concept"}
-                    ),
-                )))
+            solver = DefaultSolver(
+                spark,
+                QueryEngineConfig(
+                    solver_config=SolverConfig(
+                        project_id="SAMPLE_PROJECT",
+                        container_metrics=TableConfig(
+                            column_name_mapping={"project": "project_id"}
+                        ),
+                        channel_metrics=TableConfig(column_name_mapping={"phys_unit": "unit"}),
+                        channel_mapping=ChannelMappingConfig(
+                            filters={"toolbox_id": "container_concept"}
+                        ),
+                    )
+                ),
+            )
             query = key_value_store_unit_conversion_db.query
             vehicle_speed = query.channel_with_alias(channel_alias="vehicle_speed").alias(
                 "vehicle_speed"

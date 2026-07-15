@@ -16,11 +16,16 @@ from impulse_query_engine.analyze.query.solvers.solver_config import QueryEngine
 
 
 def _kvs_solver(spark: SparkSession) -> DefaultSolver:
-    return DefaultSolver(spark, QueryEngineConfig(solver_config=SolverConfig(
-            project_id="SAMPLE_PROJECT",
-            container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
-            channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
-        )))
+    return DefaultSolver(
+        spark,
+        QueryEngineConfig(
+            solver_config=SolverConfig(
+                project_id="SAMPLE_PROJECT",
+                container_metrics=TableConfig(column_name_mapping={"project": "project_id"}),
+                channel_mapping=ChannelMappingConfig(filters={"toolbox_id": "container_concept"}),
+            )
+        ),
+    )
 
 
 def test_returns_none_when_no_aliased_selectors(

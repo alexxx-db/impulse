@@ -112,19 +112,26 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-existent project_id should yield zero rows."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT")))
+        solver = DefaultSolver(
+            spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT"))
+        )
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
 
     def test_with_matching_parent_id(self, spark: SparkSession, key_value_store_db: MeasurementDB):
         """When parent_id matches, all matching containers are returned."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
-                container_tags=TableConfig(
-                    column_name_mapping={"element_id": "key"},
-                    filters={"parent_id": "container_concept"},
-                ),
-            )))
+        solver = DefaultSolver(
+            spark,
+            QueryEngineConfig(
+                solver_config=_default_cfg(
+                    container_tags=TableConfig(
+                        column_name_mapping={"element_id": "key"},
+                        filters={"parent_id": "container_concept"},
+                    ),
+                )
+            ),
+        )
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         container_ids = {row.container_id for row in result.collect()}
@@ -134,12 +141,17 @@ class TestDefaultSolverFilterContainerTags:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """When parent_id does not match any rows, zero results are returned."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
-                container_tags=TableConfig(
-                    column_name_mapping={"element_id": "key"},
-                    filters={"parent_id": "non_existent_parent"},
-                ),
-            )))
+        solver = DefaultSolver(
+            spark,
+            QueryEngineConfig(
+                solver_config=_default_cfg(
+                    container_tags=TableConfig(
+                        column_name_mapping={"element_id": "key"},
+                        filters={"parent_id": "non_existent_parent"},
+                    ),
+                )
+            ),
+        )
         query = key_value_store_db.query
         result = solver.filter_container_tags(spark, query)
         assert result.count() == 0
@@ -230,12 +242,17 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """``config.container_metrics.filters`` should be applied to container_metrics."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
-                container_metrics=TableConfig(
-                    column_name_mapping={"project": "project_id"},
-                    filters={"brand": "Seat"},
-                ),
-            )))
+        solver = DefaultSolver(
+            spark,
+            QueryEngineConfig(
+                solver_config=_default_cfg(
+                    container_metrics=TableConfig(
+                        column_name_mapping={"project": "project_id"},
+                        filters={"brand": "Seat"},
+                    ),
+                )
+            ),
+        )
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -246,12 +263,17 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-matching ``container_metrics.filters`` value yields zero rows."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg(
-                container_metrics=TableConfig(
-                    column_name_mapping={"project": "project_id"},
-                    filters={"brand": "VW"},
-                ),
-            )))
+        solver = DefaultSolver(
+            spark,
+            QueryEngineConfig(
+                solver_config=_default_cfg(
+                    container_metrics=TableConfig(
+                        column_name_mapping={"project": "project_id"},
+                        filters={"brand": "VW"},
+                    ),
+                )
+            ),
+        )
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)
@@ -261,7 +283,9 @@ class TestDefaultSolverFilterContainerMetrics:
         self, spark: SparkSession, key_value_store_db: MeasurementDB
     ):
         """A non-existent project_id should yield zero container_metrics rows."""
-        solver = DefaultSolver(spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT")))
+        solver = DefaultSolver(
+            spark, QueryEngineConfig(solver_config=_default_cfg("NON_EXISTENT_PROJECT"))
+        )
         query = key_value_store_db.query
         tags_df = solver.filter_container_tags(spark, query)
         result = solver.filter_container_metrics(spark, query, tags_df)

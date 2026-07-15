@@ -635,9 +635,7 @@ class TestRleEncoder:
             ValueError,
             match="DataFrame must contain an 'is_plausible' column",
         ):
-            RleEncoder(
-                SolverConfig(), drop_implausible_data_points=True
-            ).prepare_channels_df(df)
+            RleEncoder(SolverConfig(), drop_implausible_data_points=True).prepare_channels_df(df)
 
     def test_aggregate_intervals(self, spark: SparkSession):
         """Test that _aggregate_intervals collapses tagged rows into one row per interval.

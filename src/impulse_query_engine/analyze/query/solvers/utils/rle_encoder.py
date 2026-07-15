@@ -151,7 +151,6 @@ class RleEncoder:
             return df
         return df.filter(F.col(self.config.is_plausible_col))
 
-
     def _aggregate_intervals(self, df: DataFrame) -> DataFrame:
         """Collapse each interval's rows into a single ``(tstart, tend, value)`` row.
 
