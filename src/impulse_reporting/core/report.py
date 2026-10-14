@@ -405,7 +405,10 @@ class Report:
         Raises
         ------
         ValueError
-            If the event is a ContainerEvent and a ContainerEvent already exists in the report.
+            If the event is a ContainerEvent and a ContainerEvent already exists in the report,
+            or if an event with the same name, ignoring case, has already been added (event
+            names identify events in the fact and dimension tables and name the event's
+            column in the solved data, which Spark resolves case-insensitively).
         """
         if isinstance(event, ContainerEvent) and any(
             isinstance(e, ContainerEvent) for e in self.events
@@ -413,6 +416,16 @@ class Report:
             raise ValueError(
                 "Only one ContainerEvent is allowed per report. "
                 "A ContainerEvent has already been added to this report."
+            )
+        # Names are compared like Spark's case-insensitive column resolution.
+        existing = next(
+            (e for e in self.events if e.get_name().lower() == event.get_name().lower()), None
+        )
+        if existing is not None:
+            raise ValueError(
+                f"Cannot add event '{event.get_name()}': an event named "
+                f"'{existing.get_name()}' has already been added to this report. "
+                "Event names must be unique within a report, ignoring case."
             )
         self.events.append(event)
         event.set_report_id(self.report_id)
@@ -535,34 +548,48 @@ class Report:
 
     def _validate_aggregation_events(self) -> None:
         """
-        Validate that all events used in aggregations are added to the report.
+        Validate that every aggregation's event is an event object added to the report.
+
+        The event must be the registered object itself, not another object with the same
+        name: the event fact is derived from the registered event, while the solve scopes the
+        aggregation to its own event, so a differing copy would produce mismatched rows.
 
         Raises
         ------
         ValueError
-            If an aggregation uses an event that was not added to the report via add_event().
+            If an aggregation uses an event that was not added to the report via add_event(),
+            or a different object with the name (ignoring case) of a registered event.
         """
-        registered_events = set(self.events)
-        registered_event_names = {event.get_name() for event in self.events}
+        # Keyed like add_event's uniqueness check, so there is one event per key.
+        registered_events = {event.get_name().lower(): event for event in self.events}
 
-        missing_events = []
+        unregistered_events = []
 
         for page in self.pages:
             for aggregation in page.aggregations:
                 event = aggregation.get_event()
-                if event is not None and event not in registered_events:
-                    event_name = event.get_name()
-                    if event_name not in registered_event_names:
-                        missing_events.append(
-                            f"Aggregation '{aggregation.get_name()}' uses event "
-                            f"'{event_name}' which was not added to the report."
-                        )
+                if event is None:
+                    continue
+                registered = registered_events.get(event.get_name().lower())
+                if registered is event:
+                    continue
+                if registered is not None:
+                    unregistered_events.append(
+                        f"Aggregation '{aggregation.get_name()}' uses an event named "
+                        f"'{event.get_name()}' that is a different object from the registered "
+                        f"event '{registered.get_name()}'. Pass the registered event (e.g. "
+                        f"report.get_events_dict()[{registered.get_name()!r}])."
+                    )
+                else:
+                    unregistered_events.append(
+                        f"Aggregation '{aggregation.get_name()}' uses event "
+                        f"'{event.get_name()}' which was not added to the report."
+                    )
 
-        if missing_events:
+        if unregistered_events:
             error_message = (
-                "The following events are used in aggregations but were not added "
-                "to the report via add_event():\n"
-                + "\n".join(f"  - {msg}" for msg in missing_events)
+                "The following aggregations reference events that are not registered with "
+                "this report:\n" + "\n".join(f"  - {msg}" for msg in unregistered_events)
             )
             raise ValueError(error_message)
 
