@@ -11,8 +11,7 @@ the data, the units under test (vehicles, machines or test benches), signals, ev
 aggregations step by step, or describe the report to an assistant. The app generates one Impulse
 notebook, runs it as a serverless job and charts the gold tables it writes.
 
-The app is optional. It lives in
-[`apps/adhoc-reporting`](https://github.com/databrickslabs/impulse/tree/main/apps/adhoc-reporting)
+The app is optional. It lives in [`app/`](https://github.com/databrickslabs/impulse/tree/main/app)
 in the Impulse repository and is installed separately from the `databricks-impulse` package.
 
 ## What it does
@@ -47,11 +46,9 @@ incremental runs aren't supported in the app; use the framework directly for tho
 
 ## Reporting mode
 
-"Ad-hoc reporting" means reports built on demand. Every run uses Impulse's reporting mode and
-writes events and aggregations to gold tables in Unity Catalog, as described in
-[Report](/docs/references/report). The framework's ad-hoc analysis, which evaluates expressions
-directly through the [query engine](/docs/references/query_engine) without writing gold tables,
-isn't part of the app.
+Every run uses Impulse's reporting mode and writes events and aggregations to gold tables in Unity
+Catalog, as described in [Report](/docs/references/report); the framework's ad-hoc analysis through
+the [query engine](/docs/references/query_engine) isn't part of the app.
 
 ## Next steps
 

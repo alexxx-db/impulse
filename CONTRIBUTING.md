@@ -48,13 +48,13 @@ Notes specific to Impulse:
   `gold` schemas. You don't need a Databricks workspace to run the unit tests.
 - Spark warehouse output is written to `spark-warehouse/` (gitignored).
 
-## Apps
+## Impulse App
 
-The apps in [`apps/`](apps/) are separate projects with their own dependencies, tests, Makefile
-and CI workflow; the root `make` targets don't include them. For developing the Impulse App see
-[`apps/adhoc-reporting/README.md`](apps/adhoc-reporting/README.md).
+The Impulse App in [`app/`](app/) is a separate project with its own dependencies, tests, Makefile
+and CI workflow; the root `make` targets don't include it. For developing it, see
+[`app/README.md`](app/README.md).
 
-Edit the framework skills only in [`skills/`](skills/). The Impulse App's `skills/impulse/` is a
+Edit the framework skills only in [`skills/`](skills/). The app's `app/skills/impulse/` is a
 generated copy of `skills/` at the release the app pins, so changes reach the app with its next pin
 bump, and the app's CI fails if the copy differs from that release.
 

@@ -12,7 +12,7 @@ Databricks CLI authenticated against the workspace; `-p <profile>` selects the C
 
 ```bash
 git clone https://github.com/databrickslabs/impulse.git
-cd impulse/apps/adhoc-reporting
+cd impulse/app
 ```
 
 Use `main` or check out a release tag (`git checkout vX.Y.Z`). Either way, `impulse.lock` pins the
@@ -37,7 +37,7 @@ bundle has these variables:
 | Variable | Default | Meaning |
 |---|---|---|
 | `warehouse_id` | required | SQL warehouse the app runs user queries on |
-| `app_name` | `impulse-adhoc-reporting` | Name of the app, part of its URL |
+| `app_name` | `impulse-app` | Name of the app, part of its URL |
 | `end_user_group` | `users` | Group that gets `CAN_USE` on the app |
 
 ## 4. Grant the service principal access
@@ -52,7 +52,7 @@ GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA <catalog>.<gold schema>
 ```
 
 The application id is the `service_principal_client_id` in the output of
-`databricks apps get impulse-adhoc-reporting -p <profile>`. Before each run, the Review & run step
+`databricks apps get impulse-app -p <profile>`. Before each run, the Review & run step
 checks the access of both the user and the service principal and shows the exact statements when
 something is missing.
 

@@ -55,7 +55,7 @@ def main() -> None:
     )
 
     job = w.jobs.create(
-        name=f"impulse-adhoc-reporting smoke {args.name}",
+        name=f"impulse-app smoke {args.name}",
         tasks=[
             Task(
                 task_key="report",
@@ -69,7 +69,7 @@ def main() -> None:
                 spec=Environment(environment_version=lock["environment_version"], dependencies=[lock.get("wheel_override") or lock["wheel"]]),
             )
         ],
-        tags={"impulse_app": "impulse-adhoc-reporting", "impulse_version": lock["version"]},
+        tags={"impulse_app": "impulse-app", "impulse_version": lock["version"]},
     )
     run_id = w.jobs.run_now(job_id=job.job_id).run_id
     print(f"job_id={job.job_id} run_id={run_id} run_as={w.jobs.get(job.job_id).run_as_user_name}", flush=True)

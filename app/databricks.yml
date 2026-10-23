@@ -1,5 +1,5 @@
 bundle:
-  name: impulse-adhoc-reporting
+  name: impulse-app
 
 sync:
   include:
@@ -19,7 +19,7 @@ sync:
 
 variables:
   app_name:
-    default: impulse-adhoc-reporting
+    default: impulse-app
   warehouse_id:
     description: SQL warehouse the app runs user queries on
   end_user_group:

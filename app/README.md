@@ -25,7 +25,7 @@ Run the commands from this folder. `make test` needs no workspace. The other tar
 | Command | Does |
 |---|---|
 | `make test` | Unit tests, including the skills lint, and contract tests that build every generated notebook against the pinned framework wheel |
-| `make test FRAMEWORK=../..` | Same, but the contract tests build against the framework source in this repo |
+| `make test FRAMEWORK=..` | Same, but the contract tests build against the framework source in this repo |
 | `make check-skills` | Checks that `skills/impulse/` matches the root `skills/` at the pinned tag |
 | `make seed` | Loads the Impulse demo silver tables into the demo catalog and schema |
 | `make live` | Data access tests against the workspace |
