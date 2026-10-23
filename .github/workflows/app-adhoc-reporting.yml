@@ -77,6 +77,9 @@ jobs:
       - name: Unit and contract tests (pinned framework release)
         run: make test
 
+      - name: Framework skills match the pinned release
+        run: make check-skills
+
       - name: Contract tests (framework at this commit)
         run: make test FRAMEWORK=../..
 

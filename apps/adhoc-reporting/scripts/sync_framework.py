@@ -20,28 +20,56 @@ def manifest(folder: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def clone(tag: str, checkout: Path) -> None:
+    subprocess.run(["git", "clone", "--quiet", "--filter=blob:none", REPO, str(checkout)], check=True)
+    subprocess.run(["git", "-C", str(checkout), "checkout", "--quiet", tag], check=True)
+
+
+def copy_skills(checkout: Path, target: Path) -> None:
+    shutil.rmtree(target, ignore_errors=True)
+    target.mkdir(parents=True)
+    for skill in sorted((checkout / "skills").iterdir()):
+        if skill.is_dir() and (skill / "SKILL.md").exists():
+            shutil.copytree(skill, target / skill.name)
+
+
+def check(tag: str) -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        checkout = Path(tmp) / "impulse"
+        clone(tag, checkout)
+        copy_skills(checkout, Path(tmp) / "skills")
+        expected = manifest(Path(tmp) / "skills")
+    if manifest(TARGET) != expected:
+        raise SystemExit(
+            f"skills/impulse differs from skills/ at {tag}. It is a generated copy: edit the framework skills in the "
+            f"repository's root skills/ folder, and run this script with {tag} to restore the copy."
+        )
+    print(f"skills/impulse matches skills/ at {tag}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("tag")
+    parser.add_argument("tag", nargs="?", help="release to pin, like v1.2.3")
+    parser.add_argument("--check", action="store_true", help="only check that skills/impulse matches skills/ at the pinned release")
     args = parser.parse_args()
-    if not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):
-        raise SystemExit("tag must look like v1.2.3")
-    version = args.tag[1:]
     lock_path = ROOT / "impulse.lock"
     lock = tomllib.loads(lock_path.read_text())
+    if args.check:
+        if args.tag:
+            parser.error("--check takes no tag, it checks the pinned release")
+        check(f"v{lock['version']}")
+        return
+    if not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag or ""):
+        raise SystemExit("tag must look like v1.2.3")
+    version = args.tag[1:]
     previous = f"v{lock['version']}"
 
     with tempfile.TemporaryDirectory() as tmp:
         checkout = Path(tmp) / "impulse"
-        subprocess.run(["git", "clone", "--quiet", "--filter=blob:none", REPO, str(checkout)], check=True)
-        subprocess.run(["git", "-C", str(checkout), "checkout", "--quiet", args.tag], check=True)
+        clone(args.tag, checkout)
         if (checkout / "VERSION").read_text().strip() != version:
             raise SystemExit(f"VERSION file at {args.tag} does not say {version}")
-        shutil.rmtree(TARGET, ignore_errors=True)
-        TARGET.mkdir(parents=True)
-        for skill in sorted((checkout / "skills").iterdir()):
-            if skill.is_dir() and (skill / "SKILL.md").exists():
-                shutil.copytree(skill, TARGET / skill.name)
+        copy_skills(checkout, TARGET)
         (TARGET / "MANIFEST").write_text(f"tag {args.tag}\n" + manifest(TARGET))
         if previous != args.tag:
             log = subprocess.run(

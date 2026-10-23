@@ -26,6 +26,7 @@ Run the commands from this folder. `make test` needs no workspace. The other tar
 |---|---|
 | `make test` | Unit tests, including the skills lint, and contract tests that build every generated notebook against the pinned framework wheel |
 | `make test FRAMEWORK=../..` | Same, but the contract tests build against the framework source in this repo |
+| `make check-skills` | Checks that `skills/impulse/` matches the root `skills/` at the pinned tag |
 | `make seed` | Loads the Impulse demo silver tables into the demo catalog and schema |
 | `make live` | Data access tests against the workspace |
 | `make smoke` | Runs the fixture report on serverless without writing gold tables |
@@ -43,3 +44,5 @@ make test smoke eval
 ```
 
 The script updates `impulse.lock`, replaces `skills/impulse/` from the tag with a checksum manifest and lists the upstream commits since the previous pin. Pin released versions only; bump the pin after each framework release.
+
+Don't edit `skills/impulse/` by hand: edit the framework skills in the root `skills/` folder of this repo, and they reach the app with the next pin. `make check-skills`, which CI runs, fails if the copy differs from `skills/` at the pinned tag.

@@ -54,6 +54,10 @@ The apps in [`apps/`](apps/) are separate projects with their own dependencies, 
 and CI workflow; the root `make` targets don't include them. For developing the Impulse App see
 [`apps/adhoc-reporting/README.md`](apps/adhoc-reporting/README.md).
 
+Edit the framework skills only in [`skills/`](skills/). The Impulse App's `skills/impulse/` is a
+generated copy of `skills/` at the release the app pins, so changes reach the app with its next pin
+bump, and the app's CI fails if the copy differs from that release.
+
 ## Code style
 
 We use **black** for formatting and **ruff** for linting. Both are configured in

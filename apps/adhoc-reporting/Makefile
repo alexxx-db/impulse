@@ -12,7 +12,7 @@ DEPLOY_ENV := DATABRICKS_CONFIG_PROFILE DATABRICKS_WAREHOUSE_ID
 WORKSPACE_ENV := $(DEPLOY_ENV) IMPULSE_DEMO_CATALOG IMPULSE_DEMO_SCHEMA
 require = @for v in $(1); do [ -n "$$(printenv $$v)" ] || { echo "$$v is not set: copy .env.example to .env and fill it in"; exit 1; }; done
 
-.PHONY: lock test live smoke smoke-persist eval seed frontend deploy logs
+.PHONY: lock test check-skills live smoke smoke-persist eval seed frontend deploy logs
 
 lock:
 	uv lock --python 3.11
@@ -26,6 +26,9 @@ test:
 	$(UV_RUN) pytest -q tests/unit
 	uv run --no-project --python 3.12 --with "databricks-impulse[local-dev] @ $(FRAMEWORK)" --with fastapi --with pyyaml --with pytest \
 		pytest -q -p no:cacheprovider -W ignore::UserWarning tests/contract
+
+check-skills:
+	uv run --no-project --python 3.12 python scripts/sync_framework.py --check
 
 live:
 	$(call require,$(WORKSPACE_ENV))
