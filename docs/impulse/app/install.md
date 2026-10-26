@@ -12,7 +12,7 @@ Databricks CLI authenticated against the workspace; `-p <profile>` selects the C
 
 ```bash
 git clone https://github.com/databrickslabs/impulse.git
-cd impulse/app
+cd impulse/apps/adhoc-reporting
 ```
 
 Use `main` or check out a release tag (`git checkout vX.Y.Z`). Either way, `impulse.lock` pins the

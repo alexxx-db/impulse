@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from server import codegen, datamodel, results, runs, store
+from server.routes.reports import ReportName
 from server.user import User, current_user
 
 router = APIRouter(prefix="/api/reports/{name}")
@@ -14,13 +15,13 @@ def _generated(user: User, name: str):
 
 
 @router.post("/preflight")
-def preflight(name: str, user: User = Depends(current_user)) -> dict:
+def preflight(name: ReportName, user: User = Depends(current_user)) -> dict:
     _, generated = _generated(user, name)
     return runs.preflight(user, generated.config)
 
 
 @router.post("/runs")
-def start(name: str, user: User = Depends(current_user)) -> dict:
+def start(name: ReportName, user: User = Depends(current_user)) -> dict:
     _, generated = _generated(user, name)
     checked = runs.preflight(user, generated.config)
     if not checked["ok"]:
@@ -29,20 +30,20 @@ def start(name: str, user: User = Depends(current_user)) -> dict:
 
 
 @router.get("/runs")
-def history(name: str, user: User = Depends(current_user)) -> dict:
+def history(name: ReportName, user: User = Depends(current_user)) -> dict:
     return {"runs": runs.history(user, name)}
 
 
 @router.get("/runs/{run_id}")
-def detail(name: str, run_id: int, user: User = Depends(current_user)) -> dict:
+def detail(name: ReportName, run_id: int, user: User = Depends(current_user)) -> dict:
     return runs.detail(user, name, run_id)
 
 
 @router.post("/runs/{run_id}/cancel")
-def cancel(name: str, run_id: int, user: User = Depends(current_user)) -> dict:
+def cancel(name: ReportName, run_id: int, user: User = Depends(current_user)) -> dict:
     return runs.cancel(user, name, run_id)
 
 
 @router.get("/results")
-def report_results(name: str, user: User = Depends(current_user)) -> dict:
+def report_results(name: ReportName, user: User = Depends(current_user)) -> dict:
     return results.results(user, store.get(user, name), datamodel.load(user))

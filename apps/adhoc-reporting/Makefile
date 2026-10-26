@@ -4,7 +4,7 @@ export
 APP ?= impulse-app
 BUNDLE_VAR_warehouse_id = $(DATABRICKS_WAREHOUSE_ID)
 WHEEL := $(shell sed -n 's/^wheel = "\(.*\)"/\1/p' impulse.lock)
-# Framework the contract tests build against: the pinned release wheel, or the source in this repo with FRAMEWORK=..
+# Framework the contract tests build against: the pinned release wheel, or the source in this repo with FRAMEWORK=../..
 FRAMEWORK ?= $(WHEEL)
 # Install from uv.lock as it is, so a local package mirror can't rewrite it; only `make lock` changes it.
 UV_RUN := uv run --frozen --python 3.11

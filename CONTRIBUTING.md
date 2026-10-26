@@ -50,13 +50,14 @@ Notes specific to Impulse:
 
 ## Impulse App
 
-The Impulse App in [`app/`](app/) is a separate project with its own dependencies, tests, Makefile
-and CI workflow; the root `make` targets don't include it. For developing it, see
-[`app/README.md`](app/README.md).
+The Impulse App in [`apps/adhoc-reporting/`](apps/adhoc-reporting/) is a separate project with its
+own dependencies, tests, Makefile and CI workflow; the root `make` targets don't include it. For
+developing it, see [`apps/adhoc-reporting/README.md`](apps/adhoc-reporting/README.md).
 
-Edit the framework skills only in [`skills/`](skills/). The app's `app/skills/impulse/` is a
-generated copy of `skills/` at the release the app pins, so changes reach the app with its next pin
-bump, and the app's CI fails if the copy differs from that release.
+Edit the framework skills only in [`skills/`](skills/). The app's
+`apps/adhoc-reporting/skills/impulse/` is a generated copy of `skills/` at the release the app pins,
+so changes reach the app with its next pin bump, and the app's CI fails if the copy differs from
+that release.
 
 ## Code style
 

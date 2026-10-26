@@ -11,7 +11,8 @@ the data, the units under test (vehicles, machines or test benches), signals, ev
 aggregations step by step, or describe the report to an assistant. The app generates one Impulse
 notebook, runs it as a serverless job and charts the gold tables it writes.
 
-The app is optional. It lives in [`app/`](https://github.com/databrickslabs/impulse/tree/main/app)
+The app is optional. It lives in
+[`apps/adhoc-reporting/`](https://github.com/databrickslabs/impulse/tree/main/apps/adhoc-reporting)
 in the Impulse repository and is installed separately from the `databricks-impulse` package.
 
 ## What it does

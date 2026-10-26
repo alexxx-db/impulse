@@ -1,21 +1,21 @@
 name: app
 
-# Tests the Impulse App in app/. Not a required check, and it runs only on PRs that change the app:
-# Codecov (require_ci_to_pass) holds back its status while any other check fails, so an app check on
-# framework PRs would affect the framework's CI. Framework changes (src/) run it once they are on
-# main, where the contract tests build the app's generated notebooks against the framework source of
-# that commit. To check a framework branch before merging, run it by hand.
+# Tests the Impulse App in apps/adhoc-reporting/. Not a required check, and it runs only on PRs that
+# change the app: Codecov (require_ci_to_pass) holds back its status while any other check fails, so
+# an app check on framework PRs would affect the framework's CI. Framework changes (src/) run it
+# once they are on main, where the contract tests build the app's generated notebooks against the
+# framework source of that commit. To check a framework branch before merging, run it by hand.
 on:
   pull_request:
     types: [ opened, synchronize, ready_for_review ]
     paths:
-      - 'app/**'
+      - 'apps/adhoc-reporting/**'
       - '.github/workflows/app.yml'
   push:
     branches:
       - main
     paths:
-      - 'app/**'
+      - 'apps/adhoc-reporting/**'
       - 'src/**'
       - '.github/workflows/app.yml'
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
       id-token: write
     defaults:
       run:
-        working-directory: app
+        working-directory: apps/adhoc-reporting
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -75,7 +75,7 @@ jobs:
         run: make check-skills
 
       - name: Contract tests (framework at this commit)
-        run: make test FRAMEWORK=..
+        run: make test FRAMEWORK=../..
 
       - name: Build the frontend
         run: make frontend

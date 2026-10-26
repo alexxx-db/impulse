@@ -48,7 +48,7 @@ const config: Config = {
         },
       };
     },
-    // Second docs instance for the Impulse App (app/), served under /app.
+    // Second docs instance for the Impulse App (apps/adhoc-reporting/), served under /app.
     [
       '@docusaurus/plugin-content-docs',
       {

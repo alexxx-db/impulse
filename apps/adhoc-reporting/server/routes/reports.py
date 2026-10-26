@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path
 from pydantic import BaseModel
 
 from server import codegen, datamodel, runs, store
 from server.datamodel import DataModel, Source
 from server.errors import ApiError
 from server.settings import settings
-from server.spec import Location, ReportSpec, Sink
+from server.spec import NAME_RE, Location, ReportSpec, Sink
 from server.user import User, current_user
 
 router = APIRouter(prefix="/api/reports")
+
+ReportName = Annotated[str, Path(pattern=NAME_RE.pattern)]
 
 
 class NewReport(BaseModel):
@@ -45,25 +49,25 @@ def create_report(body: NewReport, user: User = Depends(current_user)) -> dict:
 
 
 @router.get("/{name}")
-def get_report(name: str, user: User = Depends(current_user)) -> dict:
+def get_report(name: ReportName, user: User = Depends(current_user)) -> dict:
     return store.get(user, name).dump()
 
 
 @router.put("/{name}")
-def save_report(name: str, spec: ReportSpec, user: User = Depends(current_user)) -> dict:
+def save_report(name: ReportName, spec: ReportSpec, user: User = Depends(current_user)) -> dict:
     if spec.name != name:
         raise ApiError(400, "name_mismatch", "Report name cannot change")
     return store.save(user, spec, expected_revision=spec.revision).dump()
 
 
 @router.delete("/{name}")
-def delete_report(name: str, user: User = Depends(current_user)) -> dict:
+def delete_report(name: ReportName, user: User = Depends(current_user)) -> dict:
     store.delete(user, name)
     runs.delete(user.email, name)
     return {"deleted": name}
 
 
 @router.post("/{name}/check")
-def check_report(name: str, spec: ReportSpec, user: User = Depends(current_user)) -> dict:
+def check_report(name: ReportName, spec: ReportSpec, user: User = Depends(current_user)) -> dict:
     model = datamodel.load(user)
     return {"issues": [i.model_dump() for i in codegen.issues(spec, _source(user, model, spec), model)]}
